@@ -3,8 +3,7 @@ use spacetimedb::{spacetimedb, Identity, SpacetimeType, spacetimedb_lib::primary
 #[spacetimedb(table)]
 pub struct User {
     #[primarykey]
-    pub id: Identity,
-    pub player_id: u64,
+    pub user_id: Identity,
     pub connected: bool
 }
 
@@ -28,8 +27,10 @@ pub struct Object {
 #[derive(Clone)]
 pub struct Player {
     #[primarykey]
-    #[autoinc]
-    pub player_id: u64
+    pub object_id: u64,
+
+    #[unique]
+    pub user_id: Identity,
 }
 
 #[spacetimedb(init)]

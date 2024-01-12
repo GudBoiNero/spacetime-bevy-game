@@ -1,4 +1,4 @@
-use spacetimedb::{spacetimedb, Identity, SpacetimeType, spacetimedb_lib::primary_key, ReducerContext, Result};
+use spacetimedb::{spacetimedb, Identity, SpacetimeType, ReducerContext, Result};
 
 #[spacetimedb(table)]
 #[derive(Clone)]

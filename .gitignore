@@ -12,3 +12,4 @@ server/target/
 # Spacetime ignore
 server/.spacetime
 **/target/
+client/src/module_bindings

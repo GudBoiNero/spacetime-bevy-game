@@ -83,14 +83,14 @@ pub fn create_player(ctx: ReducerContext) -> Result<(), String> {
         object_id: 0, 
         position: StdbVector2 { x: 0.0, y: 0.0 },
         velocity: StdbVector2 { x: 0.0, y: 0.0 },
-    }).expect("Failed to create a unique PlayerComponent.").object_id;
+    }).expect("Failed to create a unique Player.").object_id;
 
     // The PlayerComponent uses the same entity_id and stores the identity of
     // the owner, username, and whether or not they are logged in.
     Player::insert(Player {
         object_id,
         client_id
-    }).expect("Failed to insert player component.");
+    }).expect("Failed to insert Player.");
 
     log::info!("Player created: {}", object_id);
 

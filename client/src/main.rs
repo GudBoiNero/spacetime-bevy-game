@@ -1,10 +1,8 @@
-use bevy::{prelude::*, reflect::impl_reflect_struct, input::InputSystem};
+use bevy::prelude::*;
 use spacetimedb_sdk::{
     Address,
-    disconnect,
-    identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity, ConnectCallbackId},
-    on_disconnect, on_subscription_applied,
-    reducer::Status,
+    identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
+    on_disconnect,
     subscribe,
     table::{TableType, TableWithPrimaryKey},
 };
@@ -16,7 +14,7 @@ mod systems;
 
 use module_bindings::*;
 use util::*;
-use plugins::{*, player_system::PlayerSystem};
+use plugins::{*, player_plugin::PlayerPlugin};
 use systems::*;
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
@@ -32,6 +30,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, init)
         .add_systems(Update, update)
+        .add_plugins((PlayerPlugin))
         .run();
 }
 

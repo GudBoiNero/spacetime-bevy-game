@@ -1,1 +1,1 @@
-pub mod player_system;
+pub mod player_plugin;

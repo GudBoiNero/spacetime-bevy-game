@@ -30,7 +30,6 @@ fn main() {
         .run();
 }
 
-
 fn init() {
 
 }

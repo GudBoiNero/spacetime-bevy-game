@@ -39,15 +39,12 @@ pub fn init() {
     // Called when the module is initially published
 }
 
-
-
 // Called when the client connects, we update the logged_in state to true
 #[spacetimedb(connect)]
 pub fn client_connected(ctx: ReducerContext) {
     // called when the client connects, we update the logged_in state to true
     update_client_login_state(ctx, true);
 }
-
 
 // Called when the client disconnects, we update the logged_in state to false
 #[spacetimedb(disconnect)]

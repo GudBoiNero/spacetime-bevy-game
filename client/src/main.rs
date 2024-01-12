@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, reflect::impl_reflect_struct};
 use spacetimedb_sdk::{
     Address,
     disconnect,
@@ -12,9 +12,10 @@ use spacetimedb_sdk::{
 mod module_bindings;
 use module_bindings::*;
 
-/// The URL of the SpacetimeDB instance hosting our chat module.
+mod util;
+use util::*;
+
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
-/// The module name we chose when we published our module.
 const DB_NAME: &str = "spacetime-bevy-game";
 const CREDS_DIR: &str = ".spacetime-bevy-game";
 

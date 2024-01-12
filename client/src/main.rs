@@ -1,4 +1,4 @@
-use bevy::{prelude::*, reflect::impl_reflect_struct};
+use bevy::{prelude::*, reflect::impl_reflect_struct, input::InputSystem};
 use spacetimedb_sdk::{
     Address,
     disconnect,
@@ -10,10 +10,14 @@ use spacetimedb_sdk::{
 };
 
 mod module_bindings;
-use module_bindings::*;
+mod util; 
+mod plugins;
+mod systems;
 
-mod util;
+use module_bindings::*;
 use util::*;
+use plugins::{*, player_system::PlayerSystem};
+use systems::*;
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";

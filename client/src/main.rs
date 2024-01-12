@@ -12,11 +12,16 @@ use spacetimedb_sdk::{
 mod module_bindings;
 use module_bindings::*;
 
+/// The URL of the SpacetimeDB instance hosting our chat module.
+const SPACETIMEDB_URI: &str = "http://localhost:3000";
+/// The module name we chose when we published our module.
+const DB_NAME: &str = "spacetime-bevy-game";
+const CREDS_DIR: &str = ".spacetime-bevy-game";
+
 fn main() {
     register_callbacks();
     connect_to_db();
     subscribe_to_tables();
-    user_input_loop();
 
     App::new()
         .add_plugins(DefaultPlugins)
@@ -35,35 +40,28 @@ fn update() {
 }
 
 fn connect_to_db() {
-
+    connect(
+        SPACETIMEDB_URI,
+        DB_NAME,
+        load_credentials(CREDS_DIR).expect("Error reading stored credentials"),
+    )
+    .expect("Failed to connect");
 }
 
 //#region subscribers
+/// Register subscriptions for all rows of both tables.
 fn subscribe_to_tables() {
-
+    subscribe(&["SELECT * FROM User;", "SELECT * FROM Message;"]).unwrap();
 }
 //#endregion subscribers
 
-//#region input_loop
-fn user_input_loop() {
-
-}
-//#endregion input_loop
-
 //#region callbacks
-const CREDS_DIR: &str = ".spacetime_chat";
-
 fn register_callbacks() {
     once_on_connect(on_connected);
-    
-    // When a new user joins, print a notification.
-    Client::on_insert(on_client_inserted);
-
-    // When a user's status changes, print a notification.
-    Client::on_update(on_client_updated);
-
-    // When our connection closes, inform the user and exit.
     on_disconnect(on_disconnected);
+    
+    Client::on_insert(on_client_inserted);
+    Client::on_update(on_client_updated);
 }
 
 fn on_connected(creds: &Credentials, _client_address: Address) {
@@ -73,11 +71,10 @@ fn on_connected(creds: &Credentials, _client_address: Address) {
 }
 
 fn on_disconnected() {
-
+    eprintln!("Disconnected!");
+    std::process::exit(0)
 }
 
-/// Our `User::on_insert` callback:
-/// if the user is online, print a notification.
 fn on_client_inserted(client: &Client, _: Option<&ReducerEvent>) {
     if client.connected {
         println!("Client {} connected.", identity_leading_hex(&client.client_id));
@@ -88,8 +85,6 @@ fn identity_leading_hex(id: &Identity) -> String {
     hex::encode(&id.bytes()[0..8])
 }
 
-/// Our `User::on_update` callback:
-/// print a notification about name and status changes.
 fn on_client_updated(old: &Client, new: &Client, _: Option<&ReducerEvent>) {
     if old.connected && !new.connected {
         println!("User {} disconnected.", identity_leading_hex(&new.client_id));

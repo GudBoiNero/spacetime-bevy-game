@@ -11,11 +11,13 @@ mod module_bindings;
 mod util; 
 mod plugins;
 mod systems;
+mod components;
 
 use module_bindings::*;
 use util::*;
 use plugins::{*, player_plugin::PlayerPlugin};
 use systems::*;
+use components::*;
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";

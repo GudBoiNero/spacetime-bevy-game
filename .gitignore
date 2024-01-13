@@ -13,3 +13,6 @@ server/target/
 server/.spacetime
 **/target/
 client/src/module_bindings
+
+#.vscode ignore
+*.code-workspace

@@ -30,7 +30,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, init)
         .add_systems(Update, update)
-        .add_plugins((PlayerPlugin))
+        .add_plugins(PlayerPlugin)
         .run();
 }
 

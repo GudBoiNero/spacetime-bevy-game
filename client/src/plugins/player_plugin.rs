@@ -8,5 +8,5 @@ impl Plugin for PlayerPlugin {
 }
 
 fn update_movement() {
-
+    println!("Update movement!");
 }

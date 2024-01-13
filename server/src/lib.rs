@@ -1,4 +1,6 @@
-use spacetimedb::{spacetimedb, Identity, SpacetimeType, ReducerContext, Result};
+use std::ptr::null;
+
+use spacetimedb::{spacetimedb, Identity, SpacetimeType, ReducerContext, Result, sats::db::error};
 
 #[spacetimedb(table)]
 #[derive(Clone)]
@@ -61,6 +63,10 @@ pub fn update_client_login_state(ctx: ReducerContext, connected: bool) {
         let mut client: Client = client.clone();
         client.connected = connected;
         Client::filter_by_client_id(&&client.client_id.clone());
+        
+        if !connected {
+            remove_player(ctx).expect("Player doesn't exist");
+        }
     }
 }
 
@@ -93,6 +99,24 @@ pub fn create_player(ctx: ReducerContext) -> Result<(), String> {
     }).expect("Failed to insert Player.");
 
     log::info!("Player created: {}", object_id);
+
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
+pub fn remove_player(ctx: ReducerContext) -> Result<(), String> {
+    let client_id = ctx.sender;
+
+    match Player::filter_by_client_id(&client_id) {
+        Some(player) => {
+            Player::delete_by_client_id(&client_id);
+            log::info!("Player removed: {}", player.object_id);
+        },
+        None => {
+            log::info!("Player doesn't exist");
+            return Err("Player doesn't exist".to_string());
+        },
+    }
 
     Ok(())
 }

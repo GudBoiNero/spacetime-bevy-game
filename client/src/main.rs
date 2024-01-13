@@ -36,13 +36,9 @@ fn main() {
         .run();
 }
 
-fn init() {
+fn init() {}
 
-}
-
-fn update() {
-
-}
+fn update() {}
 
 fn connect_to_db() {
     connect(
@@ -56,7 +52,7 @@ fn connect_to_db() {
 //#region subscribers
 /// Register subscriptions for all rows of both tables.
 fn subscribe_to_tables() {
-    subscribe(&["SELECT * FROM User;", "SELECT * FROM Message;"]).unwrap();
+    subscribe(&["SELECT * FROM Client;", "SELECT * FROM Player;"]).unwrap();
 }
 //#endregion subscribers
 

@@ -1,11 +1,13 @@
 use bevy::prelude::*;
 
-use crate::{components::player::Player, util::vector2::Vector2};
+use crate::{components::player::Player, util::vector2::Vector2, module_bindings::create_player};
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, update_movement);
+        app
+            .add_systems(Startup, create_player)
+            .add_systems(Update, update_movement);
     }
 }
 

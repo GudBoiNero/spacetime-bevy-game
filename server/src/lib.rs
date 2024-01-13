@@ -1,6 +1,7 @@
 use std::ptr::null;
 
-use spacetimedb::{spacetimedb, Identity, SpacetimeType, ReducerContext, Result, sats::db::error};
+use log::info;
+use spacetimedb::{spacetimedb, Identity, SpacetimeType, ReducerContext, Result, sats::db::error, TableType};
 
 #[spacetimedb(table)]
 #[derive(Clone)]
@@ -67,6 +68,12 @@ pub fn update_client_login_state(ctx: ReducerContext, connected: bool) {
         if !connected {
             remove_player(ctx).expect("Player doesn't exist");
         }
+        info!("Updated Client Login State");
+    } else {
+        Client::insert(
+            Client {client_id: ctx.sender, connected}
+        ).expect("Failed to create a unique Client");
+        info!("Created Client");
     }
 }
 

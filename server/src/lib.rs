@@ -17,14 +17,28 @@ pub struct StdbVector2 {
     pub y: f32,
 }
 
+impl Default for StdbVector2 {
+    fn default() -> Self {
+        Self { x: 0.0, y: 0.0 }
+    }
+}
+
 #[spacetimedb(table)]
 #[derive(Clone)]
 pub struct Object {
     #[primarykey]
     #[autoinc]
     pub object_id: u64,
+    pub name: String,
+
     pub position: StdbVector2,
     pub velocity: StdbVector2,
+}
+
+impl Default for Object {
+    fn default() -> Self {
+        Object { object_id: 0, name: "Object".to_string(), position: StdbVector2::default(), velocity: StdbVector2::default() }
+    }
 }
 
 #[spacetimedb(table)]
@@ -91,12 +105,7 @@ pub fn create_player(ctx: ReducerContext) -> Result<(), String> {
     }
 
     // Create a new entity for this player and get a unique `entity_id`.
-    let object_id = Object::insert(Object 
-    { 
-        object_id: 0, 
-        position: StdbVector2 { x: 0.0, y: 0.0 },
-        velocity: StdbVector2 { x: 0.0, y: 0.0 },
-    }).expect("Failed to create a unique Player.").object_id;
+    let object_id = Object::insert(Object::default()).expect("Failed to create a unique Player.").object_id;
 
     // The PlayerComponent uses the same entity_id and stores the identity of
     // the owner, username, and whether or not they are logged in.

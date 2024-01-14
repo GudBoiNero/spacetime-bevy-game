@@ -1,4 +1,4 @@
-use bevy::prelude::Component;
+use bevy::{prelude::Component, ecs::component::{ComponentStorage, TableStorage}};
 
 use crate::util::vector2::Vector2;
 

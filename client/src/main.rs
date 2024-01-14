@@ -28,16 +28,15 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, init)
-        .add_systems(Update, update)
         .add_plugins(PlayerPlugin)
         .run();
 }
 
 fn init(mut c: Commands) {
-    c.spawn(Camera2dBundle {..Default::default()});
+    c.spawn(Camera2dBundle {
+        ..Default::default()
+    });
 }
-
-fn update() {}
 
 fn connect_to_db() {
     connect(

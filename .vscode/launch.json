@@ -7,9 +7,13 @@
         {
             "name": "Launch",
             "type": "node-terminal",
-            "preLaunchTask": "Launch Server",
             "command": "cd ./server; spacetime publish -c spacetime-bevy-game; cd ../; cargo run --manifest-path ./client/Cargo.toml",
             "request": "launch",
+            "presentation": {
+                "hidden": false,
+                "group": "build",
+                "order": 1
+            },
         }
     ]
 }

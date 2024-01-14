@@ -9,9 +9,20 @@
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",
-                "panel": "new"
+                "panel": "new",
             },
+            "group": "build",
             "isBackground": true
+        },
+        {
+            "label": "Build",
+            "command": "cd ./server; spacetime publish -c spacetime-bevy-game; cd ../; cargo run --manifest-path ./client/Cargo.toml",
+            "type": "shell"
+        },
+        {
+            "label": "Generate Server Bindings",
+            "command": "spacetime generate --lang rust --out-dir client/src/module_bindings --project-path server",
+            "type": "shell"
         }
     ]
 }

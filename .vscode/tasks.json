@@ -6,14 +6,12 @@
             "command": "spacetime start",
             "type": "shell",
             "args": [],
-            "problemMatcher": [
-                "$tsc"
-            ],
+            "problemMatcher": [],
             "presentation": {
                 "reveal": "always",
                 "panel": "new"
             },
-            "group": "build"
+            "isBackground": true
         }
     ]
 }

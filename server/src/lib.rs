@@ -137,11 +137,10 @@ pub fn remove_player(ctx: ReducerContext) -> Result<(), String> {
 }
 
 #[spacetimedb(reducer)]
-pub fn update_player_pos(ctx: ReducerContext, position: StdbVector2, velocity: StdbVector2) -> Result<(), String> {
+pub fn update_player_pos(ctx: ReducerContext, position: StdbVector2) -> Result<(), String> {
     if let Some(player) = Player::filter_by_client_id(&ctx.sender) {
         if let Some(mut object) = Object::filter_by_object_id(&player.object_id) {
             object.position = position;
-            object.velocity = velocity;
             Object::update_by_object_id(&player.object_id, object);
             return Ok(());
         }

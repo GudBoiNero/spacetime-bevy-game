@@ -1,20 +1,26 @@
+use std::process::Command;
+
 use bevy::prelude::*;
 
-use crate::{components::player::Player, util::vector2::Vector2, module_bindings::create_player};
+use crate::{components::{player::{Player, PlayerBundle}, velocity::Velocity}, util::vector2::Vector2, module_bindings::create_player};
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_systems(Startup, create_player)
+            .add_systems(Startup, spawn_player)
             .add_systems(Update, update_movement);
     }
 }
 
-fn update_movement(mut q: Query<&mut Player>) {
-    for mut player in &mut q {
-        let velocity: Vector2 = player.velocity;
-        player.as_mut().position += velocity;
-        println!("{} : {}", player.position.x, player.position.y);
+fn spawn_player(mut c: Commands) {
+    create_player();
+    c.spawn(PlayerBundle::default());
+}
+
+fn update_movement(mut q: Query<(&Player, &mut Velocity, &mut Transform)>) {
+    for (_player, velocity, mut transform) in &mut q {
+        transform.translation.x += velocity.0.x;
+        transform.translation.y += velocity.0.y;
     }
 }

@@ -14,10 +14,7 @@ mod systems;
 mod components;
 
 use module_bindings::*;
-use util::*;
-use plugins::{*, player_plugin::PlayerPlugin};
-use systems::*;
-use components::*;
+use plugins::player_plugin::PlayerPlugin;
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
@@ -36,7 +33,9 @@ fn main() {
         .run();
 }
 
-fn init() {}
+fn init(mut c: Commands) {
+    c.spawn(Camera2dBundle {..Default::default()});
+}
 
 fn update() {}
 

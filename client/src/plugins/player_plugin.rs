@@ -1,7 +1,7 @@
 use std::process::Command;
 
 use bevy::{input, prelude::*};
-use leafwing_input_manager::{input_map::InputMap, Actionlike, InputManagerBundle, action_state::ActionState};
+use leafwing_input_manager::{input_map::InputMap, Actionlike, InputManagerBundle, action_state::ActionState, plugin::InputManagerPlugin};
 
 use crate::{
     components::{
@@ -24,7 +24,8 @@ enum Action {
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_player)
-            .add_systems(Update, (update_velocity, update_position));
+            .add_systems(Update, (update_velocity, update_position))
+            .add_plugins(InputManagerPlugin::<Action>::default());
     }
 }
 
@@ -62,11 +63,11 @@ fn get_input_vector(action: &ActionState<Action>) -> Vector2 {
 
 fn update_velocity(mut q: Query<(&mut Velocity, &ActionState<Action>), With<Player>>) {
     let (mut velocity, action) = q.single();
-    let input_vector = get_input_vector(action).normalized();
-    velocity = &Velocity{0: input_vector};
+    let input_vector = get_input_vector(action);
+    println!("{}, {}", input_vector.x, input_vector.y);
 }
 
-fn update_position(mut q: Query<(&mut Velocity, &mut Transform), With<Player>>) {
+fn update_position(mut q: Query<(&Velocity, &mut Transform), With<Player>>) {
     for (velocity, mut transform) in &mut q {
         transform.translation.x += velocity.0.x;
         transform.translation.y += velocity.0.y;

@@ -1,4 +1,4 @@
-use std::{ops::AddAssign};
+use std::{ops::{AddAssign, Add}};
 
 use crate::module_bindings::StdbVector2;
 
@@ -31,6 +31,17 @@ impl From<Vector2> for StdbVector2 {
     fn from(value: Vector2) -> Self {
         StdbVector2 { x: value.x, y: value.y }
     }
+}
+
+impl Add for Vector2 {
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y
+        }
+    }
+
+    type Output = Self;
 }
 
 impl AddAssign for Vector2 {

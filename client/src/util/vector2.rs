@@ -1,10 +1,8 @@
 use std::ops::AddAssign;
 
-use bevy::prelude::Component;
-
 use crate::module_bindings::StdbVector2;
 
-#[derive(Component, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct Vector2 {
     pub x: f32,
     pub y: f32

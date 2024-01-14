@@ -53,8 +53,17 @@ fn spawn_player(mut c: Commands) {
     });
 }
 
+fn get_input_vector(action: &ActionState<Action>) -> Vector2 {
+    Vector2 {
+        x: (if action.pressed(Action::D) {1.0} else {0.0}) - (if action.pressed(Action::A) {1.0} else {0.0}),
+        y: (if action.pressed(Action::W) {1.0} else {0.0}) - (if action.pressed(Action::S) {1.0} else {0.0})
+    }
+}
+
 fn update_velocity(mut q: Query<(&mut Velocity, &ActionState<Action>), With<Player>>) {
-    
+    let (mut velocity, action) = q.single();
+    let input_vector = get_input_vector(action).normalized();
+    velocity = &Velocity{0: input_vector};
 }
 
 fn update_position(mut q: Query<(&mut Velocity, &mut Transform), With<Player>>) {

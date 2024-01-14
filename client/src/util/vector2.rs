@@ -1,4 +1,4 @@
-use std::ops::AddAssign;
+use std::{ops::AddAssign};
 
 use crate::module_bindings::StdbVector2;
 
@@ -6,6 +6,13 @@ use crate::module_bindings::StdbVector2;
 pub struct Vector2 {
     pub x: f32,
     pub y: f32
+}
+
+impl Vector2 {
+    pub fn normalized(&self) -> Vector2 {
+        let magnitude = f32::sqrt(self.x.powi(2) + self.y.powi(2));
+        Self { x: self.x / magnitude, y: self.x / magnitude }
+    }
 }
 
 impl Default for Vector2 {

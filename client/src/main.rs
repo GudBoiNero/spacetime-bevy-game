@@ -4,7 +4,7 @@ use spacetimedb_sdk::{
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
     on_disconnect,
     subscribe,
-    table::{TableType, TableWithPrimaryKey},
+    table::{TableType, TableWithPrimaryKey}, reducer::Reducer,
 };
 
 mod module_bindings;
@@ -63,6 +63,9 @@ fn register_callbacks() {
     
     Client::on_insert(on_client_inserted);
     Client::on_update(on_client_updated);
+
+    StdbPlayer::on_insert(on_player_inserted);
+    StdbPlayer::on_update(on_player_updated);
 }
 
 fn on_connected(creds: &Credentials, _client_address: Address) {
@@ -82,10 +85,6 @@ fn on_client_inserted(client: &Client, _: Option<&ReducerEvent>) {
     }
 }
 
-fn identity_leading_hex(id: &Identity) -> String {
-    hex::encode(&id.bytes()[0..8])
-}
-
 fn on_client_updated(old: &Client, new: &Client, _: Option<&ReducerEvent>) {
     if old.connected && !new.connected {
         println!("User {} disconnected.", identity_leading_hex(&new.client_id));
@@ -93,5 +92,17 @@ fn on_client_updated(old: &Client, new: &Client, _: Option<&ReducerEvent>) {
     if !old.connected && new.connected {
         println!("User {} connected.", identity_leading_hex(&new.client_id));
     }
+}
+
+fn on_player_inserted(player: &StdbPlayer, _: Option<&ReducerEvent>) {
+    
+}
+
+fn on_player_updated(old: &StdbPlayer, new: &StdbPlayer, _: Option<&ReducerEvent>) {
+
+}
+
+fn identity_leading_hex(id: &Identity) -> String {
+    hex::encode(&id.bytes()[0..8])
 }
 //#endregion callbacks

@@ -1,15 +1,13 @@
 use std::process::Command;
 
-use bevy::{input, prelude::*};
+use bevy::{input, prelude::*, a11y::accesskit::Vec2};
 use leafwing_input_manager::{input_map::InputMap, Actionlike, InputManagerBundle, action_state::ActionState, plugin::InputManagerPlugin};
 
 use crate::{
     components::{
         player::{Player, PlayerBundle},
-        velocity::Velocity,
     },
-    module_bindings::create_player,
-    util::vector2::Vector2,
+    module_bindings::create_player, util::{vec2::normalized, conversions::f64_to_f32},
 };
 pub struct PlayerPlugin;
 
@@ -44,7 +42,7 @@ fn spawn_player(mut c: Commands) {
         sprite: {
             SpriteBundle {
                 sprite: Sprite {
-                    custom_size: Some(Vec2 { x: 50.0, y: 50.0 }),
+                    custom_size: Some(bevy::math::Vec2 { x: 50.0, y: 50.0 }),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -54,8 +52,8 @@ fn spawn_player(mut c: Commands) {
     });
 }
 
-fn get_input_vector(action: &ActionState<Action>) -> Vector2 {
-    Vector2 {
+fn get_input_vector(action: &ActionState<Action>) -> Vec2 {
+    Vec2 {
         x: (if action.pressed(Action::D) {1.0} else {0.0}) - (if action.pressed(Action::A) {1.0} else {0.0}),
         y: (if action.pressed(Action::W) {1.0} else {0.0}) - (if action.pressed(Action::S) {1.0} else {0.0})
     }
@@ -63,10 +61,10 @@ fn get_input_vector(action: &ActionState<Action>) -> Vector2 {
 
 fn update_position(mut q: Query<(&Player, &ActionState<Action>, &mut Transform), With<Player>>) {
     for (player, action, mut transform) in &mut q {
-        let input_vector = get_input_vector(action).normalized();
+        let input_vector = normalized(get_input_vector(action));
         
-        transform.translation.x += input_vector.x * player.speed;
-        transform.translation.y += input_vector.y * player.speed;
+        transform.translation.x += f64_to_f32(input_vector.x) * player.speed;
+        transform.translation.y += f64_to_f32(input_vector.y) * player.speed;
 
         println!("New Velocity: {}, {}", input_vector.x, input_vector.y)
     }

@@ -1,7 +1,5 @@
 use bevy::prelude::*;
 
-use crate::util::vector2::Vector2;
-
 use super::velocity::Velocity;
 
 #[derive(Component, Clone)]

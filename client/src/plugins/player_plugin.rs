@@ -61,12 +61,12 @@ fn get_input_vector(action: &ActionState<Action>) -> Vector2 {
     }
 }
 
-fn update_position(mut q: Query<(&ActionState<Action>, &mut Transform), With<Player>>) {
-    for (action, mut transform) in &mut q {
-        let input_vector = get_input_vector(action);
+fn update_position(mut q: Query<(&Player, &ActionState<Action>, &mut Transform), With<Player>>) {
+    for (player, action, mut transform) in &mut q {
+        let input_vector = get_input_vector(action).normalized();
         
-        transform.translation.x += input_vector.x;
-        transform.translation.y += input_vector.y;
+        transform.translation.x += input_vector.x * player.speed;
+        transform.translation.y += input_vector.y * player.speed;
 
         println!("New Velocity: {}, {}", input_vector.x, input_vector.y)
     }

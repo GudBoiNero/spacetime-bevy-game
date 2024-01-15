@@ -8,8 +8,10 @@ use spacetimedb_sdk::{
 };
 
 mod module_bindings;
+mod plugins;
 
 use module_bindings::*;
+use plugins::{*, player_plugin::PlayerPlugin};
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
@@ -21,15 +23,12 @@ fn main() {
     subscribe_to_tables();
 
     App::new()
-        .add_plugins(DefaultPlugins)
-
-        .add_systems(Startup, init)
-
-
+        .add_plugins((DefaultPlugins, PlayerPlugin))
+        .add_systems(Startup, init_camera)
         .run();
 }
 
-fn init(mut c: Commands) {
+fn init_camera(mut c: Commands) {
     c.spawn(Camera2dBundle {
         ..Default::default()
     });
@@ -47,7 +46,7 @@ fn connect_to_db() {
 //#region subscribers
 /// Register subscriptions for all rows of both tables.
 fn subscribe_to_tables() {
-    subscribe(&["SELECT * FROM Client;", "SELECT * FROM Player;"]).unwrap();
+    subscribe(&["SELECT * FROM *"]).unwrap();
 }
 //#endregion subscribers
 

@@ -23,13 +23,7 @@ const CREDS_DIR: &str = ".spacetime-bevy-game";
 /// specific event has occured while passing params.
 /// [System based on this](https://github.com/clockworklabs/SpacetimeDB/blob/master/crates/sdk/examples/cursive-chat/main.rs#L45)
 enum Uncb {
-    PlayerUpdate {
-        id: Identity
-    },
-    PlayerInsert {
-        id: Identity
-    },
-    PlayerDelete {
+    PlayerJoined {
         id: Identity
     }
 }
@@ -40,12 +34,16 @@ type UncbRecv = mpsc::UnboundedReceiver<Uncb>;
 fn main() {
     let (uncb_send, uncb_recv) = mpsc::unbounded::<Uncb>();
 
-    register_callbacks(uncb_send);
+    register_callbacks(uncb_send.clone());
     connect_to_db();
     subscribe_to_tables();
 
-    App::new()
-        .add_plugins((DefaultPlugins, PlayerPlugin))
+    let mut app = App::new();
+    app
+        .add_plugins((
+            DefaultPlugins, 
+            PlayerPlugin {uncb_send: uncb_send.clone()}
+        ))
         .add_systems(Startup, init_camera)
         .run();
 }

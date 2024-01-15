@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use resources::stdb_state::StdbState;
 use spacetimedb_sdk::{
     Address,
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
@@ -9,14 +8,8 @@ use spacetimedb_sdk::{
 };
 
 mod module_bindings;
-mod util; 
-mod plugins;
-mod systems;
-mod components;
-mod resources;
 
 use module_bindings::*;
-use plugins::player_plugin::PlayerPlugin;
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
@@ -29,11 +22,9 @@ fn main() {
 
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(PlayerPlugin)
 
         .add_systems(Startup, init)
 
-        .insert_resource(StdbState::default())
 
         .run();
 }

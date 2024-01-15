@@ -1,9 +1,12 @@
 use bevy::prelude::*;
 
+use crate::module_bindings::{Player, self};
+
 use super::velocity::Velocity;
 
 #[derive(Component, Clone)]
 pub struct Player {
+    pub db: module_bindings::Player,
     pub speed: f32,
 }
 

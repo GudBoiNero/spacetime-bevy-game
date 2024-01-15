@@ -25,7 +25,7 @@ impl Default for StdbVector2 {
 
 #[spacetimedb(table)]
 #[derive(Clone)]
-pub struct Object {
+pub struct StdbObject {
     #[primarykey]
     #[autoinc]
     pub object_id: u64,
@@ -35,15 +35,15 @@ pub struct Object {
     pub velocity: StdbVector2,
 }
 
-impl Default for Object {
+impl Default for StdbObject {
     fn default() -> Self {
-        Object { object_id: 0, name: "Object".to_string(), position: StdbVector2::default(), velocity: StdbVector2::default() }
+        StdbObject { object_id: 0, name: "Object".to_string(), position: StdbVector2::default(), velocity: StdbVector2::default() }
     }
 }
 
 #[spacetimedb(table)]
 #[derive(Clone)]
-pub struct Player {
+pub struct StdbPlayer {
     #[primarykey]
     pub object_id: u64,
 
@@ -99,17 +99,17 @@ pub fn create_player(ctx: ReducerContext) -> Result<(), String> {
     let client_id = ctx.sender;
 
     // Make sure we don't already have a player with this identity
-    if Player::filter_by_client_id(&client_id).is_some() {
+    if StdbPlayer::filter_by_client_id(&client_id).is_some() {
         log::info!("Player already exists");
         return Err("Player already exists".to_string());
     }
 
     // Create a new entity for this player and get a unique `entity_id`.
-    let object_id = Object::insert(Object::default()).expect("Failed to create a unique Player.").object_id;
+    let object_id = StdbObject::insert(StdbObject::default()).expect("Failed to create a unique Player.").object_id;
 
     // The PlayerComponent uses the same entity_id and stores the identity of
     // the owner, username, and whether or not they are logged in.
-    Player::insert(Player {
+    StdbPlayer::insert(StdbPlayer {
         object_id,
         client_id
     }).expect("Failed to insert Player.");
@@ -122,14 +122,14 @@ pub fn create_player(ctx: ReducerContext) -> Result<(), String> {
 pub fn remove_player(ctx: ReducerContext) -> Result<(), String> {
     let client_id = ctx.sender;
 
-    if !Player::filter_by_client_id(&client_id).is_some() {
+    if !StdbPlayer::filter_by_client_id(&client_id).is_some() {
         log::info!("Player doesn't exist");
         return Err("Player doesn't exist".to_string());
     }
 
-    if let Some(player) = Player::filter_by_client_id(&ctx.sender) {
+    if let Some(player) = StdbPlayer::filter_by_client_id(&ctx.sender) {
         let _player = player.clone();
-        Player::delete_by_client_id(&client_id);
+        StdbPlayer::delete_by_client_id(&client_id);
         log::info!("Removed Player: {}", _player.client_id);
     }
 
@@ -138,10 +138,10 @@ pub fn remove_player(ctx: ReducerContext) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 pub fn update_player_pos(ctx: ReducerContext, position: StdbVector2) -> Result<(), String> {
-    if let Some(player) = Player::filter_by_client_id(&ctx.sender) {
-        if let Some(mut object) = Object::filter_by_object_id(&player.object_id) {
+    if let Some(player) = StdbPlayer::filter_by_client_id(&ctx.sender) {
+        if let Some(mut object) = StdbObject::filter_by_object_id(&player.object_id) {
             object.position = position;
-            Object::update_by_object_id(&player.object_id, object);
+            StdbObject::update_by_object_id(&player.object_id, object);
             return Ok(());
         }
     }

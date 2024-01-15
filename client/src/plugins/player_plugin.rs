@@ -18,17 +18,10 @@ enum Action {
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        crate::module_bindings::on_create_player(on_create_player);
-
         app.add_systems(Startup, spawn_player)
             .add_systems(Update, update_position)
             .add_plugins(InputManagerPlugin::<Action>::default());
     }
-}
-
-fn on_create_player(id: &Identity, _addr: Option<Address>, _status: &Status) -> () {    
-    
-    ()
 }
 
 fn spawn_player(mut c: Commands) {

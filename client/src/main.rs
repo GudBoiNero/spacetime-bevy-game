@@ -77,7 +77,11 @@ fn register_callbacks(uncb_send: UncbSend) {
     once_on_connect(on_connected);
     on_disconnect(on_disconnected);
     
-
+    StdbClient::on_insert(on_client_inserted(uncb_send.clone()));
+    StdbClient::on_update(on_client_updated(uncb_send.clone()));
+    
+    StdbPlayer::on_insert(on_player_inserted(uncb_send.clone()));
+    StdbPlayer::on_update(on_player_updated(uncb_send.clone()));
 }
 
 fn on_connected(creds: &Credentials, _client_address: Address) {

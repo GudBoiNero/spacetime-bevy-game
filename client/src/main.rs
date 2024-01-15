@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use resources::stdb_state::StdbState;
 use spacetimedb_sdk::{
     Address,
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
@@ -12,6 +13,7 @@ mod util;
 mod plugins;
 mod systems;
 mod components;
+mod resources;
 
 use module_bindings::*;
 use plugins::player_plugin::PlayerPlugin;
@@ -30,6 +32,8 @@ fn main() {
         .add_plugins(PlayerPlugin)
 
         .add_systems(Startup, init)
+
+        .insert_resource(StdbState::default())
 
         .run();
 }

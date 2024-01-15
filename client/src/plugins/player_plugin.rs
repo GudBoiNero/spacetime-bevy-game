@@ -1,10 +1,12 @@
+use std::borrow::BorrowMut;
+
 use bevy::{prelude::*, a11y::accesskit::Vec2};
 use leafwing_input_manager::{input_map::InputMap, Actionlike, InputManagerBundle, action_state::ActionState, plugin::InputManagerPlugin};
-use spacetimedb_sdk::{identity::Identity, Address, reducer::Status};
+use spacetimedb_sdk::{identity::Identity, Address, reducer::Status, table::TableType};
 
 use crate::{
     components::{player::{Player, PlayerBundle}, owner::Owner},
-    util::{vec2::normalized, conversions::f64_to_f32},
+    util::{vec2::normalized, conversions::f64_to_f32}, resources::stdb_state::StdbState, module_bindings::StdbPlayer,
 };
 pub struct PlayerPlugin;
 
@@ -18,37 +20,55 @@ enum Action {
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_player)
-            .add_systems(Update, update_position)
+        app.add_systems(Startup, (read_players, spawn_players))
+            .add_systems(Update, (read_players, update_position))
             .add_plugins(InputManagerPlugin::<Action>::default());
     }
 }
 
-fn spawn_player(mut c: Commands) {
-    // Initialize one player with ownership on this client.
-    // Then read from the database and initialize other players from other clients with separate ownership.
-    c.spawn(InputManagerBundle::<Action> {
-        action_state: ActionState::default(),
-        input_map: InputMap::new([
-            (KeyCode::W, Action::W),
-            (KeyCode::A, Action::A),
-            (KeyCode::S, Action::S),
-            (KeyCode::D, Action::D),
-        ]),
-    }).insert(PlayerBundle {
-        sprite: {
-            SpriteBundle {
-                sprite: Sprite {
-                    custom_size: Some(bevy::math::Vec2 { x: 50.0, y: 50.0 }),
+fn read_players(mut c: Commands, mut res: Option<ResMut<StdbState>>) {
+    if StdbPlayer::count() == 0 { return; }
+
+    if let Some(res) = &mut res {    
+        for player in StdbPlayer::iter() {
+            let len = res.identities.len();
+            res.identities.insert(len, player.client_id);
+        }
+    }
+}
+
+fn spawn_players(mut c: Commands, mut res: Res<StdbState>) {
+    let client_id = spacetimedb_sdk::identity::identity().expect("Could not get Identity.");
+    for id in res.identities.iter() {
+        let player_bundle = PlayerBundle {
+            sprite: {
+                SpriteBundle {
+                    sprite: Sprite {
+                        custom_size: Some(bevy::math::Vec2 { x: 50.0, y: 50.0 }),
+                        ..Default::default()
+                    },
                     ..Default::default()
-                },
-                ..Default::default()
-            }
-        },
-        owner: Owner { id: spacetimedb_sdk::identity::identity().expect("Could not get Identity.") },
-        marker: default(),
-        velocity: default(),
-    });
+                }
+            },
+            owner: Owner { id: id.clone() },
+            marker: default(),
+            velocity: default(),
+        };
+        if *id == client_id {
+            c.spawn(InputManagerBundle::<Action> {
+                action_state: ActionState::default(),
+                input_map: InputMap::new([
+                    (KeyCode::W, Action::W),
+                    (KeyCode::A, Action::A),
+                    (KeyCode::S, Action::S),
+                    (KeyCode::D, Action::D),
+                ]),
+            }).insert(player_bundle);
+            continue;
+        }
+
+        
+    }
 }
 
 fn get_input_vector(action: &ActionState<Action>) -> Vec2 {

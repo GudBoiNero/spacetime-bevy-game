@@ -1,12 +1,8 @@
-use std::process::Command;
-
-use bevy::{input, prelude::*, a11y::accesskit::Vec2};
+use bevy::{prelude::*, a11y::accesskit::Vec2};
 use leafwing_input_manager::{input_map::InputMap, Actionlike, InputManagerBundle, action_state::ActionState, plugin::InputManagerPlugin};
 
 use crate::{
-    components::{
-        player::{Player, PlayerBundle},
-    },
+    components::player::{Player, PlayerBundle},
     module_bindings::create_player, util::{vec2::normalized, conversions::f64_to_f32},
 };
 pub struct PlayerPlugin;
@@ -21,13 +17,15 @@ enum Action {
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_player)
+        app.add_systems(Startup, spawn_players)
             .add_systems(Update, update_position)
             .add_plugins(InputManagerPlugin::<Action>::default());
     }
 }
 
-fn spawn_player(mut c: Commands) {
+fn spawn_players(mut c: Commands) {
+    // Initialize one player with ownership on this client.
+    // Then read from the database and initialize other players from other clients with separate ownership.
     create_player();
     c.spawn(InputManagerBundle::<Action> {
         action_state: ActionState::default(),
@@ -60,6 +58,7 @@ fn get_input_vector(action: &ActionState<Action>) -> Vec2 {
 }
 
 fn update_position(mut q: Query<(&Player, &ActionState<Action>, &mut Transform), With<Player>>) {
+    // Add a check to use separate logic for players that are not under ownership of this client.
     for (player, action, mut transform) in &mut q {
         let input_vector = normalized(get_input_vector(action));
         

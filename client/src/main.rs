@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::futures};
 use spacetimedb_sdk::{
     Address,
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
@@ -12,12 +12,23 @@ mod plugins;
 
 use module_bindings::*;
 use plugins::{*, player_plugin::PlayerPlugin};
+use futures_channel::mpsc;
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
 const CREDS_DIR: &str = ".spacetime-bevy-game";
 
+/// Unbound Callback Enum
+enum Uncb {
+
+}
+
+type UncbSend = mpsc::Sender<Uncb>;
+type UncbRecv = mpsc::Receiver<Uncb>;
+
 fn main() {
+    let (uncb_send, uncb_recv) = mpsc::unbounded::<Uncb>();
+
     register_callbacks();
     connect_to_db();
     subscribe_to_tables();

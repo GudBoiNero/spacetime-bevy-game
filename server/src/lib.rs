@@ -32,12 +32,11 @@ pub struct StdbObject {
     pub name: String,
 
     pub position: StdbVector2,
-    pub velocity: StdbVector2,
 }
 
 impl Default for StdbObject {
     fn default() -> Self {
-        StdbObject { object_id: 0, name: "Object".to_string(), position: StdbVector2::default(), velocity: StdbVector2::default() }
+        StdbObject { object_id: 0, name: "Object".to_string(), position: StdbVector2::default() }
     }
 }
 

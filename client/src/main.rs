@@ -4,7 +4,7 @@ use spacetimedb_sdk::{
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
     on_disconnect,
     subscribe,
-    table::{TableType, TableWithPrimaryKey}, reducer::Reducer,
+    table::{TableType, TableWithPrimaryKey},
 };
 
 mod module_bindings;
@@ -56,8 +56,8 @@ fn register_callbacks() {
     once_on_connect(on_connected);
     on_disconnect(on_disconnected);
     
-    Client::on_insert(on_client_inserted);
-    Client::on_update(on_client_updated);
+    StdbClient::on_insert(on_client_inserted);
+    StdbClient::on_update(on_client_updated);
 
     StdbPlayer::on_insert(on_player_inserted);
     StdbPlayer::on_update(on_player_updated);
@@ -74,13 +74,13 @@ fn on_disconnected() {
     std::process::exit(0)
 }
 
-fn on_client_inserted(client: &Client, _: Option<&ReducerEvent>) {
+fn on_client_inserted(client: &StdbClient, _: Option<&ReducerEvent>) {
     if client.connected {
         println!("Client {} connected.", identity_leading_hex(&client.client_id));
     }
 }
 
-fn on_client_updated(old: &Client, new: &Client, _: Option<&ReducerEvent>) {
+fn on_client_updated(old: &StdbClient, new: &StdbClient, _: Option<&ReducerEvent>) {
     if old.connected && !new.connected {
         println!("User {} disconnected.", identity_leading_hex(&new.client_id));
     }

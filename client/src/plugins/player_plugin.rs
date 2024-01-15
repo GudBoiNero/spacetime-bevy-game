@@ -1,9 +1,10 @@
 use bevy::{prelude::*, a11y::accesskit::Vec2};
 use leafwing_input_manager::{input_map::InputMap, Actionlike, InputManagerBundle, action_state::ActionState, plugin::InputManagerPlugin};
+use spacetimedb_sdk::{identity::Identity, Address, reducer::Status};
 
 use crate::{
-    components::player::{Player, PlayerBundle},
-    module_bindings::create_player, util::{vec2::normalized, conversions::f64_to_f32},
+    components::{player::{Player, PlayerBundle}, owner::Owner},
+    util::{vec2::normalized, conversions::f64_to_f32},
 };
 pub struct PlayerPlugin;
 
@@ -17,16 +18,22 @@ enum Action {
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_players)
+        crate::module_bindings::on_create_player(on_create_player);
+
+        app.add_systems(Startup, spawn_player)
             .add_systems(Update, update_position)
             .add_plugins(InputManagerPlugin::<Action>::default());
     }
 }
 
-fn spawn_players(mut c: Commands) {
+fn on_create_player(id: &Identity, _addr: Option<Address>, _status: &Status) -> () {    
+    
+    ()
+}
+
+fn spawn_player(mut c: Commands) {
     // Initialize one player with ownership on this client.
     // Then read from the database and initialize other players from other clients with separate ownership.
-    create_player();
     c.spawn(InputManagerBundle::<Action> {
         action_state: ActionState::default(),
         input_map: InputMap::new([
@@ -35,8 +42,7 @@ fn spawn_players(mut c: Commands) {
             (KeyCode::S, Action::S),
             (KeyCode::D, Action::D),
         ]),
-    })
-    .insert(PlayerBundle {
+    }).insert(PlayerBundle {
         sprite: {
             SpriteBundle {
                 sprite: Sprite {
@@ -46,7 +52,9 @@ fn spawn_players(mut c: Commands) {
                 ..Default::default()
             }
         },
-        ..Default::default()
+        owner: Owner { id: spacetimedb_sdk::identity::identity().expect("Could not get Identity.") },
+        marker: default(),
+        velocity: default(),
     });
 }
 

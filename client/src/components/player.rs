@@ -1,4 +1,4 @@
-use super::velocity::Velocity;
+use super::{velocity::Velocity, owner::Owner};
 use bevy::prelude::*;
 
 #[derive(Component, Clone)]
@@ -14,9 +14,10 @@ impl Default for Player {
     }
 }
 
-#[derive(Bundle, Default)]
+#[derive(Bundle)]
 pub struct PlayerBundle {
     pub marker: Player,
     pub velocity: Velocity,
     pub sprite: SpriteBundle,
+    pub owner: Owner
 }

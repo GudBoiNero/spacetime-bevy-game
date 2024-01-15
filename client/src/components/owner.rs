@@ -5,3 +5,9 @@ use spacetimedb_sdk::identity::Identity;
 pub struct Owner {
     pub id: Identity
 }
+
+impl Owner {
+    fn is_owner(&self) -> bool {
+        spacetimedb_sdk::identity::identity().expect("Could not get Identity.") == self.id
+    }
+}

@@ -12,8 +12,10 @@ mod util;
 mod plugins;
 mod systems;
 mod components;
+mod resources;
 
 use module_bindings::*;
+use resources::player_spawner::PlayerSpawner;
 use plugins::player_plugin::PlayerPlugin;
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
@@ -27,8 +29,12 @@ fn main() {
 
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_systems(Startup, init)
         .add_plugins(PlayerPlugin)
+
+        .add_systems(Startup, init)
+
+        .insert_resource(PlayerSpawner { bundles: Vec::new() })
+
         .run();
 }
 

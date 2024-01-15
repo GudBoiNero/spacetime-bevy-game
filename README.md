@@ -1,3 +1,1 @@
-## Setup
-``mkdir -p client/src/module_bindings``
-``spacetime generate --lang rust --out-dir client/src/module_bindings --project-path server``
+This repository is entirely experimental. I have no plans for it besides learning the tools. I'm simply jumping straight in to test and demonstrate the connection between a SpacetimeDB server and a BevyEngine client. With absolutely zero experience in either, including the Rust language. I'm enjoying myself believe it or not.

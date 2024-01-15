@@ -18,21 +18,21 @@ const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
 const CREDS_DIR: &str = ".spacetime-bevy-game";
 
-/// Unbound Callback Enum
+/// Unbound Callback Message
 /// Used to tell our unbounded reciever what \
 /// specific event has occured while passing params.
 /// [System based on this](https://github.com/clockworklabs/SpacetimeDB/blob/master/crates/sdk/examples/cursive-chat/main.rs#L45)
-enum Uncb {
+enum UncbMessage {
     PlayerJoined {
         id: Identity
     }
 }
 
-type UncbSend = mpsc::UnboundedSender<Uncb>;
-type UncbRecv = mpsc::UnboundedReceiver<Uncb>;
+type UncbSend = mpsc::UnboundedSender<UncbMessage>;
+type UncbRecv = mpsc::UnboundedReceiver<UncbMessage>;
 
 fn main() {
-    let (uncb_send, uncb_recv) = mpsc::unbounded::<Uncb>();
+    let (uncb_send, mut uncb_recv) = mpsc::unbounded::<UncbMessage>();
 
     register_callbacks(uncb_send.clone());
     connect_to_db();
@@ -46,6 +46,16 @@ fn main() {
         ))
         .add_systems(Startup, init_camera)
         .run();
+
+    'process_recv: loop {
+        match uncb_recv.try_next() {
+            Err(_) => break 'process_recv,
+            Ok(None) => break 'process_recv,
+            Ok(Some(message)) => {
+                // Process message
+            }
+        }
+    }
 }
 
 fn init_camera(mut c: Commands) {

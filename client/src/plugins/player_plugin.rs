@@ -27,12 +27,7 @@ fn process_messages(
                 UncbMessage::PlayerInserted { player, event } => {
                     println!("Player inserted!")
                 }
-                UncbMessage::PlayerUpdated { old, new, event } => {
-                    println!("Player updated!")
-                }
-                UncbMessage::PlayerDeleted { player, event } => {
-                    println!("Player deleted!")
-                }
+                _ => {}
             }
         }
     }

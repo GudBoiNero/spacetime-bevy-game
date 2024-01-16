@@ -46,7 +46,7 @@ pub type UncbSend = mpsc::UnboundedSender<UncbMessage>;
 pub type UncbRecv = mpsc::UnboundedReceiver<UncbMessage>;
 
 fn main() {
-    let (uncb_send, uncb_recv) = mpsc::unbounded::<UncbMessage>();
+    let (uncb_send, uncb_recv) = mpsc::unbounded();
 
     register_callbacks(uncb_send.clone());
     connect_to_db();

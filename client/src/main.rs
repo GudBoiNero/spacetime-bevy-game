@@ -31,13 +31,6 @@ pub enum UncbMessage {
     }
 }
 
-pub trait UncbListener: Send + Sync {
-    fn send_message(&mut self, message: UncbMessage) {
-        // Use a Vec<UncbMessage> to store messages.
-        //self.message_buffer.push(message);
-    }
-}
-
 pub type UncbSend = mpsc::UnboundedSender<UncbMessage>;
 pub type UncbRecv = mpsc::UnboundedReceiver<UncbMessage>;
 
@@ -52,27 +45,10 @@ fn main() {
     app
         .add_plugins((
             DefaultPlugins, 
-            PlayerPlugin::default()
+            PlayerPlugin
         ))
         .add_systems(Startup, init_camera)
         .run();
-
-    'process_message: loop {
-        match uncb_recv.try_next() {
-            Err(_) => break 'process_message,
-            Ok(None) => break 'process_message,
-            Ok(Some(message)) => {
-                match message.clone() {
-                    UncbMessage::PlayerJoined { id } => {
-                        let plugins = app.get_added_plugins::<PlayerPlugin>();
-                        if let Some(player_plugin) = plugins.get(0) {
-                            player_plugin.send_message(message);
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 fn init_camera(mut c: Commands) {

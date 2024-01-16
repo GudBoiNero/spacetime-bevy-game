@@ -1,7 +1,7 @@
 use std::borrow::Borrow;
 
 use bevy::{prelude::*, utils::futures};
-use resources::receiver::Receiver;
+use resources::uncb_receiver::UncbReceiver;
 use spacetimedb_sdk::{
     Address,
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
@@ -45,7 +45,7 @@ fn main() {
 
     let mut app = App::new();
     app
-        .insert_resource(Receiver {recv: uncb_recv, messages: Vec::new()})
+        .insert_resource(UncbReceiver {recv: uncb_recv, messages: Vec::new()})
         .add_plugins((
             DefaultPlugins, 
             PlayerPlugin

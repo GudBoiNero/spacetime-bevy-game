@@ -22,7 +22,9 @@ fn main() {
     connect_to_db();
     subscribe_to_tables();
 
-    App::new()
+    let mut app = App::new();
+    
+    app
         .add_plugins((DefaultPlugins, PlayerPlugin))
         .add_systems(Startup, init_camera)
         .run();

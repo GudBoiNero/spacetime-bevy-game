@@ -43,12 +43,10 @@ fn connect_to_db() {
     .expect("Failed to connect");
 }
 
-//#region subscribers
 /// Register subscriptions for all rows of both tables.
 fn subscribe_to_tables() {
     subscribe(&["SELECT * FROM *"]).unwrap();
 }
-//#endregion subscribers
 
 //#region callbacks
 fn register_callbacks() {

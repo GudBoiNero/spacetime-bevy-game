@@ -1,6 +1,4 @@
-use std::borrow::Borrow;
-
-use bevy::{prelude::*, utils::futures};
+use bevy::prelude::*;
 use spacetimedb_sdk::{
     Address,
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
@@ -14,39 +12,18 @@ mod plugins;
 
 use module_bindings::*;
 use plugins::{*, player_plugin::PlayerPlugin};
-use futures_channel::mpsc;
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
 const CREDS_DIR: &str = ".spacetime-bevy-game";
 
-/// Unbound Callback Message
-/// Used to tell our unbounded reciever what \
-/// specific event has occured while passing params.
-/// [System based on this](https://github.com/clockworklabs/SpacetimeDB/blob/master/crates/sdk/examples/cursive-chat/main.rs#L45)
-#[derive(Clone)]
-pub enum UncbMessage {
-    PlayerJoined {
-        id: Identity
-    }
-}
-
-pub type UncbSend = mpsc::UnboundedSender<UncbMessage>;
-pub type UncbRecv = mpsc::UnboundedReceiver<UncbMessage>;
-
 fn main() {
-    let (uncb_send, mut uncb_recv) = mpsc::unbounded::<UncbMessage>();
-
-    register_callbacks(uncb_send.clone());
+    register_callbacks();
     connect_to_db();
     subscribe_to_tables();
 
-    let mut app = App::new();
-    app
-        .add_plugins((
-            DefaultPlugins, 
-            PlayerPlugin
-        ))
+    App::new()
+        .add_plugins((DefaultPlugins, PlayerPlugin))
         .add_systems(Startup, init_camera)
         .run();
 }
@@ -74,15 +51,15 @@ fn subscribe_to_tables() {
 //#endregion subscribers
 
 //#region callbacks
-fn register_callbacks(uncb_send: UncbSend) {
+fn register_callbacks() {
     once_on_connect(on_connected);
     on_disconnect(on_disconnected);
     
-    StdbClient::on_insert(on_client_inserted(uncb_send.clone()));
-    StdbClient::on_update(on_client_updated(uncb_send.clone()));
-    
-    StdbPlayer::on_insert(on_player_inserted(uncb_send.clone()));
-    StdbPlayer::on_update(on_player_updated(uncb_send.clone()));
+    StdbClient::on_insert(on_client_inserted);
+    StdbClient::on_update(on_client_updated);
+
+    StdbPlayer::on_insert(on_player_inserted);
+    StdbPlayer::on_update(on_player_updated);
 }
 
 fn on_connected(creds: &Credentials, _client_address: Address) {
@@ -96,35 +73,27 @@ fn on_disconnected() {
     std::process::exit(0)
 }
 
-fn on_client_inserted(uncb_send: UncbSend) -> impl FnMut(&StdbClient, Option<&ReducerEvent>) + Send + 'static {
-    move |client, event| { 
-        if client.connected {
-            println!("Client {} connected.", identity_leading_hex(&client.client_id));
-        }
+fn on_client_inserted(client: &StdbClient, _: Option<&ReducerEvent>) {
+    if client.connected {
+        println!("Client {} connected.", identity_leading_hex(&client.client_id));
     }
 }
 
-fn on_client_updated(uncb_send: UncbSend) -> impl FnMut(&StdbClient, &StdbClient, Option<&ReducerEvent>) + Send + 'static {
-    move |old, new, event| {
-        if old.connected && !new.connected {
-            println!("User {} disconnected.", identity_leading_hex(&new.client_id));
-        }
-        if !old.connected && new.connected {
-            println!("User {} connected.", identity_leading_hex(&new.client_id));
-        }
+fn on_client_updated(old: &StdbClient, new: &StdbClient, _: Option<&ReducerEvent>) {
+    if old.connected && !new.connected {
+        println!("User {} disconnected.", identity_leading_hex(&new.client_id));
+    }
+    if !old.connected && new.connected {
+        println!("User {} connected.", identity_leading_hex(&new.client_id));
     }
 }
 
-fn on_player_inserted(uncb_send: UncbSend) -> impl FnMut(&StdbPlayer, Option<&ReducerEvent>) + Send + 'static {
-    move |player, event| {
+fn on_player_inserted(player: &StdbPlayer, _: Option<&ReducerEvent>) {
+    
+}
 
-    } 
-}  
+fn on_player_updated(old: &StdbPlayer, new: &StdbPlayer, _: Option<&ReducerEvent>) {
 
-fn on_player_updated(uncb_send: UncbSend) -> impl FnMut(&StdbPlayer, &StdbPlayer, Option<&ReducerEvent>) + Send + 'static  {
-    move |old, new, event| {
-        
-    } 
 }
 
 fn identity_leading_hex(id: &Identity) -> String {

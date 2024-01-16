@@ -24,14 +24,22 @@ const CREDS_DIR: &str = ".spacetime-bevy-game";
 /// Used to tell our unbounded reciever what \
 /// specific event has occured while passing params.
 /// [System based on this](https://github.com/clockworklabs/SpacetimeDB/blob/master/crates/sdk/examples/cursive-chat/main.rs#L45)
-enum UncbMessage {
+#[derive(Clone)]
+pub enum UncbMessage {
     PlayerJoined {
         id: Identity
     }
 }
 
-type UncbSend = mpsc::UnboundedSender<UncbMessage>;
-type UncbRecv = mpsc::UnboundedReceiver<UncbMessage>;
+pub trait UncbListener: Send + Sync {
+    fn send_message(&mut self, message: UncbMessage) {
+        // Use a Vec<UncbMessage> to store messages.
+        //self.message_buffer.push(message);
+    }
+}
+
+pub type UncbSend = mpsc::UnboundedSender<UncbMessage>;
+pub type UncbRecv = mpsc::UnboundedReceiver<UncbMessage>;
 
 fn main() {
     let (uncb_send, mut uncb_recv) = mpsc::unbounded::<UncbMessage>();
@@ -44,7 +52,7 @@ fn main() {
     app
         .add_plugins((
             DefaultPlugins, 
-            PlayerPlugin
+            PlayerPlugin::default()
         ))
         .add_systems(Startup, init_camera)
         .run();
@@ -54,7 +62,14 @@ fn main() {
             Err(_) => break 'process_message,
             Ok(None) => break 'process_message,
             Ok(Some(message)) => {
-                // Process message
+                match message.clone() {
+                    UncbMessage::PlayerJoined { id } => {
+                        let plugins = app.get_added_plugins::<PlayerPlugin>();
+                        if let Some(player_plugin) = plugins.get(0) {
+                            player_plugin.send_message(message);
+                        }
+                    }
+                }
             }
         }
     }

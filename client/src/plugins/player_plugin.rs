@@ -15,8 +15,8 @@ impl Plugin for PlayerPlugin {
 }
 
 /// Process messages
-fn process_messages(mut recv: Res<UncbReceiver>) {
-    recv.get_messages();
+fn process_messages(mut recv: ResMut<UncbReceiver>) {
+    for message in recv.get_messages().iter() {}
 }
 
 /// Grabs all `StdbPlayer`s from the database and spawns \

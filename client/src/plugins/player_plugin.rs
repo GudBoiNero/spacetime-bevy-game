@@ -9,3 +9,10 @@ impl Plugin for PlayerPlugin {
         
     }
 }
+
+/// Grabs all `StdbPlayer`s from the database and spawns \
+/// a player for them. If the player has the same `Identity` \
+/// as the client, initialize it's bundle with input controls.
+fn init_players(c: Commands) {
+
+}

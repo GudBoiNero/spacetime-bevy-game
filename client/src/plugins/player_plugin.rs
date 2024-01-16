@@ -1,10 +1,8 @@
 use bevy::{app::{Startup, App, Plugin, Update}, a11y::accesskit::Action, ecs::system::Commands};
 
-use crate::{UncbSend, UncbRecv};
+use crate::{UncbRecv};
 
-pub struct PlayerPlugin {
-    pub uncb_send: UncbSend
-}
+pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         

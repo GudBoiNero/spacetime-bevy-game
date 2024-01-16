@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use bevy::{prelude::*, utils::futures};
 use spacetimedb_sdk::{
     Address,
@@ -42,15 +44,15 @@ fn main() {
     app
         .add_plugins((
             DefaultPlugins, 
-            PlayerPlugin {uncb_send: uncb_send.clone()}
+            PlayerPlugin
         ))
         .add_systems(Startup, init_camera)
         .run();
 
-    'process_recv: loop {
+    'process_message: loop {
         match uncb_recv.try_next() {
-            Err(_) => break 'process_recv,
-            Ok(None) => break 'process_recv,
+            Err(_) => break 'process_message,
+            Ok(None) => break 'process_message,
             Ok(Some(message)) => {
                 // Process message
             }

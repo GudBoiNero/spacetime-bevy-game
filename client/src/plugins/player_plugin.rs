@@ -1,22 +1,41 @@
 use bevy::{
     a11y::accesskit::Action,
     app::{App, Plugin, Startup, Update},
-    ecs::system::{Commands, Res, ResMut},
+    ecs::{
+        system::{Commands, Res, ResMut},
+        world::World,
+    },
 };
 
-use crate::resources::uncb_receiver::UncbReceiver;
+use crate::{resources::uncb_receiver::UncbReceiver, UncbMessage};
 
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, init_players)
-            .add_systems(Update, process_messages);
+            .add_systems(Update, process_messages(&self));
     }
 }
 
 /// Process messages
-fn process_messages(mut recv: ResMut<UncbReceiver>) {
-    for message in recv.get_messages().iter() {}
+fn process_messages(
+    plugin: &PlayerPlugin,
+) -> impl FnMut(ResMut<UncbReceiver>, Commands) + Send + 'static {
+    move |mut recv, c| {
+        for message in recv.get_messages().iter() {
+            match message {
+                UncbMessage::PlayerInserted { player, event } => {
+                    println!("Player inserted!")
+                }
+                UncbMessage::PlayerUpdated { old, new, event } => {
+                    println!("Player updated!")
+                }
+                UncbMessage::PlayerDeleted { player, event } => {
+                    println!("Player deleted!")
+                }
+            }
+        }
+    }
 }
 
 /// Grabs all `StdbPlayer`s from the database and spawns \

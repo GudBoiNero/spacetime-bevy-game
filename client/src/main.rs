@@ -1,6 +1,7 @@
 use std::borrow::Borrow;
 
 use bevy::{prelude::*, utils::futures};
+use resources::receiver::Receiver;
 use spacetimedb_sdk::{
     Address,
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
@@ -11,6 +12,7 @@ use spacetimedb_sdk::{
 
 mod module_bindings;
 mod plugins;
+mod resources;
 
 use module_bindings::*;
 use plugins::{*, player_plugin::PlayerPlugin};
@@ -35,7 +37,7 @@ pub type UncbSend = mpsc::UnboundedSender<UncbMessage>;
 pub type UncbRecv = mpsc::UnboundedReceiver<UncbMessage>;
 
 fn main() {
-    let (uncb_send, mut uncb_recv) = mpsc::unbounded::<UncbMessage>();
+    let (uncb_send, uncb_recv) = mpsc::unbounded::<UncbMessage>();
 
     register_callbacks(uncb_send.clone());
     connect_to_db();
@@ -43,6 +45,7 @@ fn main() {
 
     let mut app = App::new();
     app
+        .insert_resource(Receiver {recv: uncb_recv, messages: Vec::new()})
         .add_plugins((
             DefaultPlugins, 
             PlayerPlugin

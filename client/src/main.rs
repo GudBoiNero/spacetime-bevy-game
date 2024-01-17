@@ -20,6 +20,7 @@ use util::actions::GameActions;
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
 const CREDS_DIR: &str = ".spacetime-bevy-game";
+const DEBUG_MODE: bool = true;
 
 fn main() {
     register_callbacks();
@@ -43,7 +44,11 @@ fn connect_to_db() {
     connect(
         SPACETIMEDB_URI,
         DB_NAME,
-        load_credentials(CREDS_DIR).expect("Error reading stored credentials"),
+        if DEBUG_MODE {
+            None
+        } else {
+            load_credentials(CREDS_DIR).expect("Error reading stored credentials")
+        },
     )
     .expect("Failed to connect");
 }

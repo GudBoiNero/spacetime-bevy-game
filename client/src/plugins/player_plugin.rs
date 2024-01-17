@@ -15,7 +15,7 @@ use spacetimedb_sdk::table::TableType;
 
 use crate::{
     components::player::{Player, PlayerBundle},
-    create_player, identity_leading_hex,
+    create_player, identity_leading_hex, update_player_pos,
     util::{
         actions::{get_input_vector, GameActions},
         vec2_nan_to_zero,
@@ -42,18 +42,26 @@ fn update_players(
         With<Player>,
     >,
 ) {
-    for (action_state, mut transform, mut player) in &mut q {
+    for (action_state, mut transform, player) in &mut q {
         // We have a handle to the local player.
-        // Handle input and update transform locally and on the database.
         if let Some(action_state) = action_state {
+            // Handle input and update transform locally.
             let input_vector = vec2_nan_to_zero(get_input_vector(action_state).normalize());
             transform.translation.x += input_vector.x;
             transform.translation.y += input_vector.y;
+            // Then sync to the database.
+            update_player_pos(crate::StdbVector2 {
+                x: transform.translation.x,
+                y: transform.translation.y,
+            })
         }
         // We have a handle to an online player.
-        // Read from database and update transform.
         else {
+            // Read from database and update transform.
             let stdb_object = StdbObject::filter_by_object_id(player.data.object_id);
+            let position = stdb_object.unwrap().position;
+            transform.translation.x = position.x;
+            transform.translation.y = position.y;
         }
     }
 }

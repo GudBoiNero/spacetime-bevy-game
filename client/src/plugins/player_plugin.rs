@@ -23,7 +23,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (create_player))
-            .add_systems(Update, (update_players));
+            .add_systems(Update, (refresh_players));
     }
 }
 
@@ -31,7 +31,7 @@ impl Plugin for PlayerPlugin {
 /// Finds all currently spawned `Player`s and all `StdbPlayer`s within the database. \
 /// Spawns only the `StdbPlayer`s that do not have a spawned `Player` with a corresponding `Identity`. \
 /// Adds an `InputManagerBundle::<GameActions>` bundle to the *local* `Player` bundle.
-fn update_players(mut c: Commands, q: Query<&Player>) {
+fn refresh_players(mut c: Commands, q: Query<&Player>) {
     let mut spawnable_players: Vec<StdbPlayer> = Vec::new();
     'stdb_loop: for stdb_player in StdbPlayer::iter() {
         for player in q.iter() {

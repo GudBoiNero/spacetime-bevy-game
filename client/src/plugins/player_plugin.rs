@@ -6,6 +6,7 @@ use bevy::{
         system::{Commands, Query},
     },
     input::keyboard::KeyCode,
+    log::info,
 };
 use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, InputManagerBundle};
 use spacetimedb_sdk::table::TableType;
@@ -39,10 +40,11 @@ fn update_players(mut c: Commands, q: Query<&Player>) {
     }
 
     for spawn in spawnable_players {
-        println!("Spawned player: {}", identity_leading_hex(&spawn.client_id));
+        info!("Spawned player: {}", identity_leading_hex(&spawn.client_id));
         let bundle = PlayerBundle::new(Player {
             data: spawn.clone(),
         });
+
         if spawn.client_id == spacetimedb_sdk::identity::identity().unwrap() {
             c.spawn(bundle).insert(InputManagerBundle::<GameActions> {
                 // Stores "which actions are currently pressed"

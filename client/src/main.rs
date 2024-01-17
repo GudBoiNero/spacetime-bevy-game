@@ -6,9 +6,11 @@ use spacetimedb_sdk::{
     Address,
 };
 
+mod components;
 mod module_bindings;
 mod plugins;
 
+use bevy_tasks::*;
 use module_bindings::*;
 use plugins::{player_plugin::PlayerPlugin, *};
 

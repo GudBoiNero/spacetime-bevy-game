@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use leafwing_input_manager::plugin::InputManagerPlugin;
 use spacetimedb_sdk::{
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
     on_disconnect, subscribe,
@@ -9,10 +10,12 @@ use spacetimedb_sdk::{
 mod components;
 mod module_bindings;
 mod plugins;
+mod util;
 
 use bevy_tasks::*;
 use module_bindings::*;
 use plugins::{player_plugin::PlayerPlugin, *};
+use util::actions::GameActions;
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
@@ -24,7 +27,8 @@ fn main() {
     subscribe_to_tables();
 
     let mut app = App::new();
-    app.add_plugins((DefaultPlugins, PlayerPlugin))
+    app.add_plugins(InputManagerPlugin::<GameActions>::default())
+        .add_plugins((DefaultPlugins, PlayerPlugin))
         .add_systems(Startup, init_camera)
         .run();
 }

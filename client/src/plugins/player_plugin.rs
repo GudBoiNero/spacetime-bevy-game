@@ -27,7 +27,6 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-/// Called every frame.
 /// Finds all currently spawned `Player`s and all `StdbPlayer`s within the database. \
 /// Spawns only the `StdbPlayer`s that do not have a spawned `Player` with a corresponding `Identity`. \
 /// Adds an `InputManagerBundle::<GameActions>` bundle to the *local* `Player` bundle.

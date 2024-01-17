@@ -1,17 +1,16 @@
 use bevy::prelude::*;
 use spacetimedb_sdk::{
-    Address,
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
-    on_disconnect,
-    subscribe,
+    on_disconnect, subscribe,
     table::{TableType, TableWithPrimaryKey},
+    Address,
 };
 
 mod module_bindings;
 mod plugins;
 
 use module_bindings::*;
-use plugins::{*, player_plugin::PlayerPlugin};
+use plugins::{player_plugin::PlayerPlugin, *};
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
@@ -23,9 +22,7 @@ fn main() {
     subscribe_to_tables();
 
     let mut app = App::new();
-    
-    app
-        .add_plugins((DefaultPlugins, PlayerPlugin))
+    app.add_plugins((DefaultPlugins, PlayerPlugin))
         .add_systems(Startup, init_camera)
         .run();
 }
@@ -54,7 +51,7 @@ fn subscribe_to_tables() {
 fn register_callbacks() {
     once_on_connect(on_connected);
     on_disconnect(on_disconnected);
-    
+
     StdbClient::on_insert(on_client_inserted);
     StdbClient::on_update(on_client_updated);
 
@@ -75,26 +72,28 @@ fn on_disconnected() {
 
 fn on_client_inserted(client: &StdbClient, _: Option<&ReducerEvent>) {
     if client.connected {
-        println!("Client {} connected.", identity_leading_hex(&client.client_id));
+        println!(
+            "Client {} connected.",
+            identity_leading_hex(&client.client_id)
+        );
     }
 }
 
 fn on_client_updated(old: &StdbClient, new: &StdbClient, _: Option<&ReducerEvent>) {
     if old.connected && !new.connected {
-        println!("User {} disconnected.", identity_leading_hex(&new.client_id));
+        println!(
+            "User {} disconnected.",
+            identity_leading_hex(&new.client_id)
+        );
     }
     if !old.connected && new.connected {
         println!("User {} connected.", identity_leading_hex(&new.client_id));
     }
 }
 
-fn on_player_inserted(player: &StdbPlayer, _: Option<&ReducerEvent>) {
-    
-}
+fn on_player_inserted(player: &StdbPlayer, _: Option<&ReducerEvent>) {}
 
-fn on_player_updated(old: &StdbPlayer, new: &StdbPlayer, _: Option<&ReducerEvent>) {
-
-}
+fn on_player_updated(old: &StdbPlayer, new: &StdbPlayer, _: Option<&ReducerEvent>) {}
 
 fn identity_leading_hex(id: &Identity) -> String {
     hex::encode(&id.bytes()[0..8])

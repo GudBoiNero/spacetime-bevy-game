@@ -7,6 +7,8 @@ use bevy::{
     },
     input::keyboard::KeyCode,
     log::info,
+    reflect::Reflect,
+    transform::{self, components::Transform},
 };
 use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, InputManagerBundle};
 use spacetimedb_sdk::table::TableType;
@@ -14,8 +16,11 @@ use spacetimedb_sdk::table::TableType;
 use crate::{
     components::player::{Player, PlayerBundle},
     create_player, identity_leading_hex,
-    util::actions::GameActions,
-    StdbPlayer,
+    util::{
+        actions::{get_input_vector, GameActions},
+        vec2_nan_to_zero,
+    },
+    StdbObject, StdbPlayer,
 };
 
 pub struct PlayerPlugin;
@@ -23,7 +28,33 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (create_player))
-            .add_systems(Update, (refresh_players));
+            .add_systems(Update, (refresh_players, update_players));
+    }
+}
+
+fn update_players(
+    mut q: Query<
+        (
+            Option<&ActionState<GameActions>>,
+            &mut Transform,
+            &mut Player,
+        ),
+        With<Player>,
+    >,
+) {
+    for (action_state, mut transform, mut player) in &mut q {
+        // We have a handle to the local player.
+        // Handle input and update transform locally and on the database.
+        if let Some(action_state) = action_state {
+            let input_vector = vec2_nan_to_zero(get_input_vector(action_state).normalize());
+            transform.translation.x += input_vector.x;
+            transform.translation.y += input_vector.y;
+        }
+        // We have a handle to an online player.
+        // Read from database and update transform.
+        else {
+            let stdb_object = StdbObject::filter_by_object_id(player.data.object_id);
+        }
     }
 }
 

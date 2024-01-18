@@ -22,10 +22,14 @@ const CREDS_DIR: &str = ".spacetime-bevy-game";
 const DEBUG_MODE: bool = true;
 
 fn main() {
+    // TODO: Connect these three functions to the Bevy ECS.
+    // Allow for registering callbacks between the Bevy ECS and SpacetimeDB \
+    // callbacks.
     register_callbacks();
     connect_to_db();
     subscribe_to_tables();
 
+    //
     let mut app = App::new();
     app.add_plugins(InputManagerPlugin::<GameActions>::default())
         .add_plugins((DefaultPlugins, PlayerPlugin))

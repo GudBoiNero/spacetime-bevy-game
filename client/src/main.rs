@@ -12,7 +12,6 @@ mod module_bindings;
 mod plugins;
 mod util;
 
-use bevy_tasks::*;
 use module_bindings::*;
 use plugins::{player_plugin::PlayerPlugin, *};
 use util::actions::GameActions;

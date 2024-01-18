@@ -1,7 +1,9 @@
 use std::borrow::Borrow;
 
 use bevy::{prelude::*, utils::futures};
-use resources::uncb_receiver::{process_messages, UncbMessage, UncbReceiver, UncbRecv, UncbSend};
+use resources::uncb_receiver::{
+    process_messages, UncbEvent, UncbMessage, UncbReceiver, UncbRecv, UncbSend,
+};
 use spacetimedb_sdk::{
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
     on_disconnect, subscribe,
@@ -9,9 +11,11 @@ use spacetimedb_sdk::{
     Address,
 };
 
+mod components;
 mod module_bindings;
 mod plugins;
 mod resources;
+mod util;
 
 use futures_channel::mpsc;
 use module_bindings::*;
@@ -30,10 +34,11 @@ fn main() {
 
     let mut app = App::new();
     app.insert_resource(UncbReceiver::new(uncb_recv))
+        .add_event::<UncbEvent>()
         .add_plugins((DefaultPlugins, PlayerPlugin))
-        .add_systems(Startup, init_camera);
-    app.add_systems(Update, process_messages);
-    app.run();
+        .add_systems(Startup, init_camera)
+        .add_systems(Update, process_messages)
+        .run();
 }
 
 fn init_camera(mut c: Commands) {

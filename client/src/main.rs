@@ -61,8 +61,13 @@ fn register_callbacks(uncb_send: UncbSend) {
     once_on_connect(on_connected);
     on_disconnect(on_disconnected);
 
+    StdbObject::on_insert(on_object_inserted(uncb_send.clone()));
+    StdbObject::on_update(on_object_updated(uncb_send.clone()));
+    StdbObject::on_delete(on_object_deleted(uncb_send.clone()));
+
     StdbClient::on_insert(on_client_inserted(uncb_send.clone()));
     StdbClient::on_update(on_client_updated(uncb_send.clone()));
+    StdbClient::on_delete(on_client_deleted(uncb_send.clone()));
 
     StdbPlayer::on_insert(on_player_inserted(uncb_send.clone()));
     StdbPlayer::on_update(on_player_updated(uncb_send.clone()));
@@ -78,6 +83,24 @@ fn on_connected(creds: &Credentials, _client_address: Address) {
 fn on_disconnected() {
     eprintln!("Disconnected!");
     std::process::exit(0)
+}
+
+fn on_object_inserted(
+    mut uncb_send: UncbSend,
+) -> impl FnMut(&StdbObject, Option<&ReducerEvent>) + Send + 'static {
+    move |object, event| {}
+}
+
+fn on_object_updated(
+    mut uncb_send: UncbSend,
+) -> impl FnMut(&StdbObject, &StdbObject, Option<&ReducerEvent>) + Send + 'static {
+    move |old, new, event| {}
+}
+
+fn on_object_deleted(
+    mut uncb_send: UncbSend,
+) -> impl FnMut(&StdbObject, Option<&ReducerEvent>) + Send + 'static {
+    move |object, event| {}
 }
 
 fn on_client_inserted(
@@ -107,6 +130,12 @@ fn on_client_updated(
             println!("User {} connected.", identity_leading_hex(&new.client_id));
         }
     }
+}
+
+fn on_client_deleted(
+    mut uncb_send: UncbSend,
+) -> impl FnMut(&StdbClient, Option<&ReducerEvent>) + Send + 'static {
+    move |client, event| {}
 }
 
 fn on_player_inserted(

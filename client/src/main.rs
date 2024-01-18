@@ -22,9 +22,6 @@ const CREDS_DIR: &str = ".spacetime-bevy-game";
 const DEBUG_MODE: bool = true;
 
 fn main() {
-    // TODO: Connect these three functions to the Bevy ECS.
-    // Allow for registering callbacks between the Bevy ECS and SpacetimeDB \
-    // callbacks.
     register_callbacks();
     connect_to_db();
     subscribe_to_tables();
@@ -63,6 +60,9 @@ fn subscribe_to_tables() {
 
 //#region callbacks
 fn register_callbacks() {
+    // TODO: Connect these functions to the Bevy ECS.
+    // Allow for registering callbacks between the Bevy ECS and SpacetimeDB \
+    // callbacks. Possibly pass in some component within this function...?
     once_on_connect(on_connected);
     on_disconnect(on_disconnected);
 

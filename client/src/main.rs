@@ -1,38 +1,39 @@
 use bevy::prelude::*;
+use leafwing_input_manager::plugin::InputManagerPlugin;
 use spacetimedb_sdk::{
-    Address,
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
-    on_disconnect,
-    subscribe,
+    on_disconnect, subscribe,
     table::{TableType, TableWithPrimaryKey},
+    Address,
 };
 
-mod module_bindings;
-mod util; 
-mod plugins;
-mod systems;
 mod components;
+mod module_bindings;
+mod plugins;
+mod util;
 
 use module_bindings::*;
-use plugins::player_plugin::PlayerPlugin;
+use plugins::{player_plugin::PlayerPlugin, *};
+use util::actions::GameActions;
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
 const CREDS_DIR: &str = ".spacetime-bevy-game";
+const DEBUG_MODE: bool = true;
 
 fn main() {
     register_callbacks();
     connect_to_db();
     subscribe_to_tables();
 
-    App::new()
-        .add_plugins(DefaultPlugins)
-        .add_systems(Startup, init)
-        .add_plugins(PlayerPlugin)
+    let mut app = App::new();
+    app.add_plugins(InputManagerPlugin::<GameActions>::default())
+        .add_plugins((DefaultPlugins, PlayerPlugin))
+        .add_systems(Startup, init_camera)
         .run();
 }
 
-fn init(mut c: Commands) {
+fn init_camera(mut c: Commands) {
     c.spawn(Camera2dBundle {
         ..Default::default()
     });
@@ -42,25 +43,30 @@ fn connect_to_db() {
     connect(
         SPACETIMEDB_URI,
         DB_NAME,
-        load_credentials(CREDS_DIR).expect("Error reading stored credentials"),
+        if DEBUG_MODE {
+            None
+        } else {
+            load_credentials(CREDS_DIR).expect("Error reading stored credentials")
+        },
     )
     .expect("Failed to connect");
 }
 
-//#region subscribers
 /// Register subscriptions for all rows of both tables.
 fn subscribe_to_tables() {
-    subscribe(&["SELECT * FROM Client;", "SELECT * FROM Player;"]).unwrap();
+    subscribe(&["SELECT * FROM *"]).unwrap();
 }
-//#endregion subscribers
 
 //#region callbacks
 fn register_callbacks() {
     once_on_connect(on_connected);
     on_disconnect(on_disconnected);
-    
-    Client::on_insert(on_client_inserted);
-    Client::on_update(on_client_updated);
+
+    StdbClient::on_insert(on_client_inserted);
+    StdbClient::on_update(on_client_updated);
+
+    StdbPlayer::on_insert(on_player_inserted);
+    StdbPlayer::on_update(on_player_updated);
 }
 
 fn on_connected(creds: &Credentials, _client_address: Address) {
@@ -74,22 +80,32 @@ fn on_disconnected() {
     std::process::exit(0)
 }
 
-fn on_client_inserted(client: &Client, _: Option<&ReducerEvent>) {
+fn on_client_inserted(client: &StdbClient, _: Option<&ReducerEvent>) {
     if client.connected {
-        println!("Client {} connected.", identity_leading_hex(&client.client_id));
+        println!(
+            "Client {} connected.",
+            identity_leading_hex(&client.client_id)
+        );
     }
 }
 
-fn identity_leading_hex(id: &Identity) -> String {
-    hex::encode(&id.bytes()[0..8])
-}
-
-fn on_client_updated(old: &Client, new: &Client, _: Option<&ReducerEvent>) {
+fn on_client_updated(old: &StdbClient, new: &StdbClient, _: Option<&ReducerEvent>) {
     if old.connected && !new.connected {
-        println!("User {} disconnected.", identity_leading_hex(&new.client_id));
+        println!(
+            "User {} disconnected.",
+            identity_leading_hex(&new.client_id)
+        );
     }
     if !old.connected && new.connected {
         println!("User {} connected.", identity_leading_hex(&new.client_id));
     }
+}
+
+fn on_player_inserted(player: &StdbPlayer, _: Option<&ReducerEvent>) {}
+
+fn on_player_updated(old: &StdbPlayer, new: &StdbPlayer, _: Option<&ReducerEvent>) {}
+
+fn identity_leading_hex(id: &Identity) -> String {
+    hex::encode(&id.bytes()[0..8])
 }
 //#endregion callbacks

@@ -5,26 +5,20 @@ use spacetimedb::{spacetimedb, Identity, SpacetimeType, ReducerContext, Result, 
 
 #[spacetimedb(table)]
 #[derive(Clone)]
-pub struct Client {
+pub struct StdbClient {
     #[primarykey]
     pub client_id: Identity,
     pub connected: bool
 }
 
-#[derive(SpacetimeType, Clone)]
+#[derive(SpacetimeType, Clone, Default)]
 pub struct StdbVector2 {
     pub x: f32,
     pub y: f32,
 }
 
-impl Default for StdbVector2 {
-    fn default() -> Self {
-        Self { x: 0.0, y: 0.0 }
-    }
-}
-
 #[spacetimedb(table)]
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct StdbObject {
     #[primarykey]
     #[autoinc]
@@ -32,13 +26,6 @@ pub struct StdbObject {
     pub name: String,
 
     pub position: StdbVector2,
-    pub velocity: StdbVector2,
-}
-
-impl Default for StdbObject {
-    fn default() -> Self {
-        StdbObject { object_id: 0, name: "Object".to_string(), position: StdbVector2::default(), velocity: StdbVector2::default() }
-    }
 }
 
 #[spacetimedb(table)]
@@ -73,19 +60,19 @@ pub fn client_disconnected(ctx: ReducerContext) {
 // This helper function gets the PlayerComponent, sets the logged
 // in variable and updates the PlayerComponent table row.
 pub fn update_client_login_state(ctx: ReducerContext, connected: bool) {
-    if let Some(client) = Client::filter_by_client_id(&ctx.sender) {
+    if let Some(client) = StdbClient::filter_by_client_id(&ctx.sender) {
         // We clone the PlayerComponent so we can edit it and pass it back.
-        let mut client: Client = client.clone();
+        let mut client: StdbClient = client.clone();
         client.connected = connected;
-        Client::update_by_client_id(&ctx.sender, client);
+        StdbClient::update_by_client_id(&ctx.sender, client);
 
         if !connected {
             remove_player(ctx).expect("Player doesn't exist");
         }
         info!("Updated Client Login State");
     } else {
-        Client::insert(
-            Client {client_id: ctx.sender, connected}
+        StdbClient::insert(
+            StdbClient {client_id: ctx.sender, connected}
         ).expect("Failed to create a unique Client");
         info!("Created Client");
     }

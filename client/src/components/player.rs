@@ -1,22 +1,33 @@
-use super::velocity::Velocity;
-use bevy::prelude::*;
+use bevy::{
+    ecs::{bundle::Bundle, component::Component},
+    math::Vec2,
+    sprite::{Sprite, SpriteBundle},
+};
 
-#[derive(Component, Clone)]
+use crate::StdbPlayer;
+
+#[derive(Component)]
 pub struct Player {
-    pub speed: f32,
+    pub data: StdbPlayer,
 }
 
-impl Default for Player {
-    fn default() -> Self {
+#[derive(Bundle)]
+pub struct PlayerBundle {
+    pub player: Player,
+    pub sprite_bundle: SpriteBundle,
+}
+
+impl PlayerBundle {
+    pub fn new(player: Player) -> Self {
         Self {
-            speed: 8.0, 
+            player,
+            sprite_bundle: SpriteBundle {
+                sprite: Sprite {
+                    custom_size: Some(Vec2 { x: 50.0, y: 50.0 }),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
         }
     }
-}
-
-#[derive(Bundle, Default)]
-pub struct PlayerBundle {
-    pub marker: Player,
-    pub velocity: Velocity,
-    pub sprite: SpriteBundle,
 }

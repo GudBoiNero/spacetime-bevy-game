@@ -1,71 +1,105 @@
-use std::process::Command;
-
-use bevy::{input, prelude::*, a11y::accesskit::Vec2};
-use leafwing_input_manager::{input_map::InputMap, Actionlike, InputManagerBundle, action_state::ActionState, plugin::InputManagerPlugin};
+use bevy::{
+    a11y::accesskit::Action,
+    app::{App, Plugin, Startup, Update},
+    ecs::{
+        query::With,
+        system::{Commands, Query},
+    },
+    input::keyboard::KeyCode,
+    log::info,
+    reflect::Reflect,
+    transform::{self, components::Transform},
+};
+use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, InputManagerBundle};
+use spacetimedb_sdk::table::TableType;
 
 use crate::{
-    components::{
-        player::{Player, PlayerBundle},
+    components::player::{Player, PlayerBundle},
+    create_player, identity_leading_hex, update_player_pos,
+    util::{
+        actions::{get_input_vector, GameActions},
+        vec2_nan_to_zero,
     },
-    module_bindings::create_player, util::{vec2::normalized, conversions::f64_to_f32},
+    StdbObject, StdbPlayer,
 };
-pub struct PlayerPlugin;
 
-#[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
-enum Action {
-    W,
-    A,
-    S,
-    D,
-}
+pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_player)
-            .add_systems(Update, update_position)
-            .add_plugins(InputManagerPlugin::<Action>::default());
+        app.add_systems(Startup, (create_player))
+            .add_systems(Update, (refresh_players, update_players));
     }
 }
 
-fn spawn_player(mut c: Commands) {
-    create_player();
-    c.spawn(InputManagerBundle::<Action> {
-        action_state: ActionState::default(),
-        input_map: InputMap::new([
-            (KeyCode::W, Action::W),
-            (KeyCode::A, Action::A),
-            (KeyCode::S, Action::S),
-            (KeyCode::D, Action::D),
-        ]),
-    })
-    .insert(PlayerBundle {
-        sprite: {
-            SpriteBundle {
-                sprite: Sprite {
-                    custom_size: Some(bevy::math::Vec2 { x: 50.0, y: 50.0 }),
-                    ..Default::default()
-                },
-                ..Default::default()
+fn update_players(
+    mut q: Query<
+        (
+            Option<&ActionState<GameActions>>,
+            &mut Transform,
+            &mut Player,
+        ),
+        With<Player>,
+    >,
+) {
+    for (action_state, mut transform, player) in &mut q {
+        // We have a handle to the local player.
+        if let Some(action_state) = action_state {
+            // Handle input and update transform locally.
+            let input_vector = vec2_nan_to_zero(get_input_vector(action_state).normalize());
+            transform.translation.x += input_vector.x;
+            transform.translation.y += input_vector.y;
+            // Then sync to the database.
+            update_player_pos(crate::StdbVector2 {
+                x: transform.translation.x,
+                y: transform.translation.y,
+            })
+        }
+        // We have a handle to an online player.
+        else {
+            // Read from database and update transform.
+            let stdb_object = StdbObject::filter_by_object_id(player.data.object_id);
+            let position = stdb_object.unwrap().position;
+            transform.translation.x = position.x;
+            transform.translation.y = position.y;
+        }
+    }
+}
+
+/// Finds all currently spawned `Player`s and all `StdbPlayer`s within the database. \
+/// Spawns only the `StdbPlayer`s that do not have a spawned `Player` with a corresponding `Identity`. \
+/// Adds an `InputManagerBundle::<GameActions>` bundle to the *local* `Player` bundle.
+fn refresh_players(mut c: Commands, q: Query<&Player>) {
+    let mut spawnable_players: Vec<StdbPlayer> = Vec::new();
+    'stdb_loop: for stdb_player in StdbPlayer::iter() {
+        for player in q.iter() {
+            if player.data.client_id == stdb_player.client_id {
+                continue 'stdb_loop;
             }
-        },
-        ..Default::default()
-    });
-}
-
-fn get_input_vector(action: &ActionState<Action>) -> Vec2 {
-    Vec2 {
-        x: (if action.pressed(Action::D) {1.0} else {0.0}) - (if action.pressed(Action::A) {1.0} else {0.0}),
-        y: (if action.pressed(Action::W) {1.0} else {0.0}) - (if action.pressed(Action::S) {1.0} else {0.0})
+        }
+        spawnable_players.push(stdb_player);
     }
-}
 
-fn update_position(mut q: Query<(&Player, &ActionState<Action>, &mut Transform), With<Player>>) {
-    for (player, action, mut transform) in &mut q {
-        let input_vector = normalized(get_input_vector(action));
-        
-        transform.translation.x += f64_to_f32(input_vector.x) * player.speed;
-        transform.translation.y += f64_to_f32(input_vector.y) * player.speed;
+    for spawn in spawnable_players {
+        info!("Spawned player: {}", identity_leading_hex(&spawn.client_id));
+        let bundle = PlayerBundle::new(Player {
+            data: spawn.clone(),
+        });
 
-        println!("New Velocity: {}, {}", input_vector.x, input_vector.y)
+        if spawn.client_id == spacetimedb_sdk::identity::identity().unwrap() {
+            c.spawn(bundle).insert(InputManagerBundle::<GameActions> {
+                // Stores "which actions are currently pressed"
+                action_state: ActionState::default(),
+                // Describes how to convert from player inputs into those actions
+                input_map: InputMap::new([
+                    (KeyCode::W, GameActions::W),
+                    (KeyCode::A, GameActions::A),
+                    (KeyCode::S, GameActions::S),
+                    (KeyCode::D, GameActions::D),
+                ]),
+            });
+        } else {
+            c.spawn(bundle);
+        }
     }
 }

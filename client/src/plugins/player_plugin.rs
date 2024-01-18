@@ -7,7 +7,7 @@ use bevy::{
     },
 };
 
-use crate::{resources::uncb_receiver::UncbReceiver, UncbMessage};
+use crate::resources::uncb_receiver::{UncbMessage, UncbReceiver};
 
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {

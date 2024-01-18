@@ -1,7 +1,7 @@
 use std::borrow::Borrow;
 
 use bevy::{prelude::*, utils::futures};
-use resources::uncb_receiver::UncbReceiver;
+use resources::uncb_receiver::{process_messages, UncbMessage, UncbReceiver, UncbRecv, UncbSend};
 use spacetimedb_sdk::{
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
     on_disconnect, subscribe,
@@ -21,30 +21,6 @@ const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
 const CREDS_DIR: &str = ".spacetime-bevy-game";
 
-/// Unbound Callback Message
-/// Used to tell our unbounded reciever what \
-/// specific event has occured while passing params.
-/// [System based on this](https://github.com/clockworklabs/SpacetimeDB/blob/master/crates/sdk/examples/cursive-chat/main.rs#L45)
-#[derive(Clone)]
-pub enum UncbMessage {
-    PlayerInserted {
-        player: StdbPlayer,
-        event: ReducerEvent,
-    },
-    PlayerUpdated {
-        old: StdbPlayer,
-        new: StdbPlayer,
-        event: ReducerEvent,
-    },
-    PlayerDeleted {
-        player: StdbPlayer,
-        event: ReducerEvent,
-    },
-}
-
-pub type UncbSend = mpsc::UnboundedSender<UncbMessage>;
-pub type UncbRecv = mpsc::UnboundedReceiver<UncbMessage>;
-
 fn main() {
     let (uncb_send, uncb_recv) = mpsc::unbounded();
 
@@ -55,8 +31,9 @@ fn main() {
     let mut app = App::new();
     app.insert_resource(UncbReceiver::new(uncb_recv))
         .add_plugins((DefaultPlugins, PlayerPlugin))
-        .add_systems(Startup, init_camera)
-        .run();
+        .add_systems(Startup, init_camera);
+    app.add_systems(Update, process_messages);
+    app.run();
 }
 
 fn init_camera(mut c: Commands) {

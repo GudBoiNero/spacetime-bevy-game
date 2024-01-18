@@ -1,4 +1,8 @@
-use bevy::ecs::system::{Commands, ResMut, Resource};
+use bevy::ecs::{
+    event::Event,
+    system::{Commands, ResMut, Resource},
+    world::World,
+};
 use futures_channel::mpsc;
 
 use crate::{ReducerEvent, StdbObject, StdbPlayer};
@@ -34,28 +38,25 @@ pub type UncbRecv = mpsc::UnboundedReceiver<UncbMessage>;
 #[derive(Resource)]
 pub struct UncbReceiver {
     pub recv: UncbRecv,
-    pub messages: Vec<UncbMessage>,
 }
 
 impl UncbReceiver {
     pub fn new(recv: UncbRecv) -> Self {
-        UncbReceiver {
-            recv,
-            messages: Vec::new(),
-        }
-    }
-
-    pub fn get_messages(&mut self) -> &Vec<UncbMessage> {
-        &self.messages
+        UncbReceiver { recv }
     }
 }
 
-pub fn process_messages(mut res: ResMut<UncbReceiver>, c: Commands) {
+#[derive(Event)]
+pub struct UncbEvent {
+    message: UncbMessage,
+}
+
+pub fn process_messages(mut res: ResMut<UncbReceiver>, mut c: Commands) {
     loop {
         let message = res.recv.try_next();
         if let Ok(message) = message {
             if let Some(message) = message {
-                res.messages.push(message);
+                c.add(|w: &mut World| w.send_event(UncbEvent { message }));
             }
         } else {
             break;

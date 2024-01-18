@@ -63,6 +63,11 @@ fn register_callbacks() {
     // TODO: Connect these functions to the Bevy ECS.
     // Allow for registering callbacks between the Bevy ECS and SpacetimeDB \
     // callbacks. Possibly pass in some component within this function...?
+
+    // When I say "connect to the ECS", if you notice how all of the `systems` that are called by the `App`,
+    // you'll notice that they have some special parameters, like `Query`s and other Bevy types.
+    // We want the ability to connect Bevy systems to these `on_insert` or `on_update` callbacks.
+    // The callbacks can be setup wherever we want in the program, but we can only connect them to the ECS through the `app` or through some kind of `Resource`
     once_on_connect(on_connected);
     on_disconnect(on_disconnected);
 

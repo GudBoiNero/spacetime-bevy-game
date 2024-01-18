@@ -10,6 +10,7 @@ use spacetimedb_sdk::{
 mod components;
 mod module_bindings;
 mod plugins;
+mod resources;
 mod util;
 
 use module_bindings::*;

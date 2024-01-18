@@ -3,7 +3,7 @@ use bevy::{
     app::{App, Plugin, Startup, Update},
     ecs::{
         query::With,
-        system::{Commands, Query},
+        system::{Commands, Query, ResMut},
     },
     input::keyboard::KeyCode,
     log::info,
@@ -15,7 +15,9 @@ use spacetimedb_sdk::table::TableType;
 
 use crate::{
     components::player::{Player, PlayerBundle},
-    create_player, identity_leading_hex, update_player_pos,
+    create_player, identity_leading_hex,
+    resources::stdb_callbacks::StdbCallbacks,
+    update_player_pos,
     util::{
         actions::{get_input_vector, GameActions},
         vec2_nan_to_zero,
@@ -27,10 +29,16 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (create_player))
+        app.add_systems(Startup, (create_player, register_callbacks))
             .add_systems(Update, (refresh_players, update_players));
     }
 }
+
+fn register_callbacks(mut res: ResMut<StdbCallbacks>) {
+    res.add_callback(StdbObject::on_insert, (test_function,));
+}
+
+fn test_function() {}
 
 fn update_players(
     mut q: Query<

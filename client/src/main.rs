@@ -177,12 +177,12 @@ fn on_client_updated(
     move |old, new, event| {
         if old.connected && !new.connected {
             println!(
-                "User {} disconnected.",
+                "Client {} disconnected.",
                 identity_leading_hex(&new.client_id)
             );
         }
         if !old.connected && new.connected {
-            println!("User {} connected.", identity_leading_hex(&new.client_id));
+            println!("Client {} connected.", identity_leading_hex(&new.client_id));
         }
     }
 }
@@ -198,6 +198,7 @@ fn on_player_inserted(
 ) -> impl FnMut(&StdbPlayer, Option<&ReducerEvent>) + Send + 'static {
     move |player, event| {
         if let Some(event) = event {
+            info!("UncbMessage::PlayerInserted called");
             uncb_send
                 .unbounded_send(UncbMessage::PlayerInserted {
                     data: player.clone(),
@@ -213,6 +214,7 @@ fn on_player_updated(
 ) -> impl FnMut(&StdbPlayer, &StdbPlayer, Option<&ReducerEvent>) + Send + 'static {
     move |old, new, event| {
         if let Some(event) = event {
+            info!("UncbMessage::PlayerUpdated called");
             uncb_send
                 .unbounded_send(UncbMessage::PlayerUpdated {
                     old: old.clone(),
@@ -229,6 +231,7 @@ fn on_player_deleted(
 ) -> impl FnMut(&StdbPlayer, Option<&ReducerEvent>) + Send + 'static {
     move |player, event| {
         if let Some(event) = event {
+            info!("UncbMessage::PlayerRemoved called");
             uncb_send
                 .unbounded_send(UncbMessage::PlayerRemoved {
                     data: player.clone(),

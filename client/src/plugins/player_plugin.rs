@@ -36,8 +36,37 @@ use crate::{
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (create_player,))
-            .add_systems(Update, (refresh_players, update_players, init_players));
+        app.add_systems(Startup, (create_player,)).add_systems(
+            Update,
+            (
+                refresh_players,
+                update_players,
+                init_players,
+                remove_players,
+            ),
+        );
+    }
+}
+
+/// Listens for the `UncbMessage::ObjectRemoved` message and removes the corresponding player's bundle with the same `object_id` locally.
+fn remove_players(
+    mut c: Commands,
+    mut q: Query<(Entity, &Player)>,
+    mut er: EventReader<UncbEvent>,
+) {
+    for ev in er.read() {
+        match &ev.message {
+            UncbMessage::PlayerRemoved { data, event } => {
+                info!("Player removed: {}", data.object_id);
+                for (entity, player) in q.iter() {
+                    if player.data.object_id == data.object_id {
+                        c.entity(entity).remove::<PlayerBundle>();
+                    }
+                }
+            }
+
+            _ => {}
+        }
     }
 }
 
@@ -72,8 +101,8 @@ fn update_players(
             // Read from database and update transform.
             let stdb_object = StdbObject::filter_by_object_id(player.data.object_id);
             let position = stdb_object.unwrap().position;
-            transform.translation.x = position.x;
-            transform.translation.y = position.y;
+            transform.translation.x = position.x * PLAYER_SPEED;
+            transform.translation.y = position.y * PLAYER_SPEED;
         }
     }
 }

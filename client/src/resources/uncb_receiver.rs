@@ -81,8 +81,6 @@ pub fn process_messages(mut res: ResMut<UncbReceiver>, mut c: Commands) {
         let message = res.recv.try_next();
         if let Ok(message) = message {
             if let Some(message) = message {
-                info!("Processing message.");
-
                 c.add(|w: &mut World| w.send_event(UncbEvent { message }));
             }
         } else {

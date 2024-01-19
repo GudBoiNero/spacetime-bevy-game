@@ -1,5 +1,10 @@
-use bevy::prelude::*;
+use std::borrow::Borrow;
+
+use bevy::{prelude::*, utils::futures};
 use leafwing_input_manager::plugin::InputManagerPlugin;
+use resources::uncb_receiver::{
+    process_messages, UncbEvent, UncbMessage, UncbReceiver, UncbRecv, UncbSend,
+};
 use spacetimedb_sdk::{
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
     on_disconnect, subscribe,
@@ -10,8 +15,10 @@ use spacetimedb_sdk::{
 mod components;
 mod module_bindings;
 mod plugins;
+mod resources;
 mod util;
 
+use futures_channel::mpsc;
 use module_bindings::*;
 use plugins::{player_plugin::PlayerPlugin, *};
 use util::actions::GameActions;
@@ -22,14 +29,22 @@ const CREDS_DIR: &str = ".spacetime-bevy-game";
 const DEBUG_MODE: bool = true;
 
 fn main() {
-    register_callbacks();
+    let (uncb_send, uncb_recv) = mpsc::unbounded();
+
+    register_callbacks(uncb_send.clone());
     connect_to_db();
     subscribe_to_tables();
 
     let mut app = App::new();
-    app.add_plugins(InputManagerPlugin::<GameActions>::default())
-        .add_plugins((DefaultPlugins, PlayerPlugin))
+    app.insert_resource(UncbReceiver::new(uncb_recv))
+        .add_event::<UncbEvent>()
+        .add_plugins((
+            DefaultPlugins,
+            PlayerPlugin,
+            InputManagerPlugin::<GameActions>::default(),
+        ))
         .add_systems(Startup, init_camera)
+        .add_systems(Update, process_messages)
         .run();
 }
 
@@ -52,58 +67,177 @@ fn connect_to_db() {
     .expect("Failed to connect");
 }
 
-/// Register subscriptions for all rows of both tables.
+/// Register subscriptions for all rows of tables.
 fn subscribe_to_tables() {
     subscribe(&["SELECT * FROM *"]).unwrap();
 }
 
 //#region callbacks
-fn register_callbacks() {
-    once_on_connect(on_connected);
-    on_disconnect(on_disconnected);
+fn register_callbacks(uncb_send: UncbSend) {
+    once_on_connect(on_connected(uncb_send.clone()));
+    on_disconnect(on_disconnected(uncb_send.clone()));
 
-    StdbClient::on_insert(on_client_inserted);
-    StdbClient::on_update(on_client_updated);
+    StdbObject::on_insert(on_object_inserted(uncb_send.clone()));
+    StdbObject::on_update(on_object_updated(uncb_send.clone()));
+    StdbObject::on_delete(on_object_deleted(uncb_send.clone()));
 
-    StdbPlayer::on_insert(on_player_inserted);
-    StdbPlayer::on_update(on_player_updated);
+    StdbClient::on_insert(on_client_inserted(uncb_send.clone()));
+    StdbClient::on_update(on_client_updated(uncb_send.clone()));
+    StdbClient::on_delete(on_client_deleted(uncb_send.clone()));
+
+    StdbPlayer::on_insert(on_player_inserted(uncb_send.clone()));
+    StdbPlayer::on_update(on_player_updated(uncb_send.clone()));
+    StdbPlayer::on_delete(on_player_deleted(uncb_send.clone()));
 }
 
-fn on_connected(creds: &Credentials, _client_address: Address) {
-    if let Err(e) = save_credentials(CREDS_DIR, creds) {
-        eprintln!("Failed to save credentials: {:?}", e);
+fn on_connected(mut uncb_send: UncbSend) -> impl FnMut(&Credentials, Address) + Send + 'static {
+    move |creds, address| {
+        if let Err(e) = save_credentials(CREDS_DIR, creds) {
+            eprintln!("Failed to save credentials: {:?}", e);
+        }
+        uncb_send
+            .unbounded_send(UncbMessage::Connected {
+                creds: creds.clone(),
+                address,
+            })
+            .unwrap();
     }
 }
 
-fn on_disconnected() {
-    eprintln!("Disconnected!");
-    std::process::exit(0)
-}
-
-fn on_client_inserted(client: &StdbClient, _: Option<&ReducerEvent>) {
-    if client.connected {
-        println!(
-            "Client {} connected.",
-            identity_leading_hex(&client.client_id)
-        );
+fn on_disconnected(mut uncb_send: UncbSend) -> impl FnMut() + Send + 'static {
+    move || {
+        eprintln!("Disconnected!");
+        uncb_send.unbounded_send(UncbMessage::Disconnected).unwrap();
+        std::process::exit(0)
     }
 }
 
-fn on_client_updated(old: &StdbClient, new: &StdbClient, _: Option<&ReducerEvent>) {
-    if old.connected && !new.connected {
-        println!(
-            "User {} disconnected.",
-            identity_leading_hex(&new.client_id)
-        );
-    }
-    if !old.connected && new.connected {
-        println!("User {} connected.", identity_leading_hex(&new.client_id));
+fn on_object_inserted(
+    mut uncb_send: UncbSend,
+) -> impl FnMut(&StdbObject, Option<&ReducerEvent>) + Send + 'static {
+    move |object, event| {
+        if let Some(event) = event {
+            uncb_send
+                .unbounded_send(UncbMessage::ObjectInserted {
+                    data: object.clone(),
+                    event: event.clone(),
+                })
+                .unwrap();
+        }
     }
 }
 
-fn on_player_inserted(player: &StdbPlayer, _: Option<&ReducerEvent>) {}
+fn on_object_updated(
+    mut uncb_send: UncbSend,
+) -> impl FnMut(&StdbObject, &StdbObject, Option<&ReducerEvent>) + Send + 'static {
+    move |old, new, event| {
+        if let Some(event) = event {
+            uncb_send
+                .unbounded_send(UncbMessage::ObjectUpdated {
+                    new: new.clone(),
+                    old: old.clone(),
+                    event: event.clone(),
+                })
+                .unwrap();
+        }
+    }
+}
 
-fn on_player_updated(old: &StdbPlayer, new: &StdbPlayer, _: Option<&ReducerEvent>) {}
+fn on_object_deleted(
+    mut uncb_send: UncbSend,
+) -> impl FnMut(&StdbObject, Option<&ReducerEvent>) + Send + 'static {
+    move |object, event| {
+        if let Some(event) = event {
+            uncb_send
+                .unbounded_send(UncbMessage::ObjectRemoved {
+                    data: object.clone(),
+                    event: event.clone(),
+                })
+                .unwrap();
+        }
+    }
+}
+
+fn on_client_inserted(
+    mut uncb_send: UncbSend,
+) -> impl FnMut(&StdbClient, Option<&ReducerEvent>) + Send + 'static {
+    move |client, event| {
+        if client.connected {
+            println!(
+                "Client {} connected.",
+                identity_leading_hex(&client.client_id)
+            );
+        }
+    }
+}
+
+fn on_client_updated(
+    mut uncb_send: UncbSend,
+) -> impl FnMut(&StdbClient, &StdbClient, Option<&ReducerEvent>) + Send + 'static {
+    move |old, new, event| {
+        if old.connected && !new.connected {
+            println!(
+                "Client {} disconnected.",
+                identity_leading_hex(&new.client_id)
+            );
+        }
+        if !old.connected && new.connected {
+            println!("Client {} connected.", identity_leading_hex(&new.client_id));
+        }
+    }
+}
+
+fn on_client_deleted(
+    mut uncb_send: UncbSend,
+) -> impl FnMut(&StdbClient, Option<&ReducerEvent>) + Send + 'static {
+    move |client, event| {}
+}
+
+fn on_player_inserted(
+    mut uncb_send: UncbSend,
+) -> impl FnMut(&StdbPlayer, Option<&ReducerEvent>) + Send + 'static {
+    move |player, event| {
+        if let Some(event) = event {
+            info!("UncbMessage::PlayerInserted called");
+            uncb_send
+                .unbounded_send(UncbMessage::PlayerInserted {
+                    data: player.clone(),
+                    event: event.clone(),
+                })
+                .unwrap();
+        }
+    }
+}
+
+fn on_player_updated(
+    mut uncb_send: UncbSend,
+) -> impl FnMut(&StdbPlayer, &StdbPlayer, Option<&ReducerEvent>) + Send + 'static {
+    move |old, new, event| {
+        if let Some(event) = event {
+            info!("UncbMessage::PlayerUpdated called");
+            uncb_send
+                .unbounded_send(UncbMessage::PlayerUpdated {
+                    old: old.clone(),
+                    new: new.clone(),
+                    event: event.clone(),
+                })
+                .unwrap();
+        }
+    }
+}
+
+fn on_player_deleted(
+    mut uncb_send: UncbSend,
+) -> impl FnMut(&StdbPlayer, Option<&ReducerEvent>) + Send + 'static {
+    move |player, event| {
+        info!("UncbMessage::PlayerRemoved called");
+        uncb_send
+            .unbounded_send(UncbMessage::PlayerRemoved {
+                data: player.clone(),
+            })
+            .unwrap();
+    }
+}
 
 fn identity_leading_hex(id: &Identity) -> String {
     hex::encode(&id.bytes()[0..8])

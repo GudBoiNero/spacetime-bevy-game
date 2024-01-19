@@ -1,21 +1,31 @@
+use std::{
+    borrow::BorrowMut,
+    time::{Duration, SystemTime},
+};
+
 use bevy::{
     a11y::accesskit::Action,
     app::{App, Plugin, Startup, Update},
     ecs::{
+        entity::Entity,
+        event::{EventReader, EventWriter},
         query::With,
-        system::{Commands, Query},
+        system::{Commands, Query, Res, ResMut},
+        world::World,
     },
     input::keyboard::KeyCode,
     log::info,
-    reflect::Reflect,
-    transform::{self, components::Transform},
+    time::Time,
+    transform::components::Transform,
 };
 use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, InputManagerBundle};
 use spacetimedb_sdk::table::TableType;
 
 use crate::{
-    components::player::{Player, PlayerBundle},
-    create_player, identity_leading_hex, update_player_pos,
+    components::player::{Player, PlayerBundle, PLAYER_SPEED},
+    create_player, identity_leading_hex,
+    resources::uncb_receiver::{UncbEvent, UncbMessage, UncbReceiver},
+    stdb_player, update_player_pos,
     util::{
         actions::{get_input_vector, GameActions},
         vec2_nan_to_zero,
@@ -24,14 +34,45 @@ use crate::{
 };
 
 pub struct PlayerPlugin;
-
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (create_player))
-            .add_systems(Update, (refresh_players, update_players));
+        app.add_systems(Startup, (create_player,)).add_systems(
+            Update,
+            (
+                refresh_players,
+                update_players,
+                init_players,
+                remove_players,
+            ),
+        );
     }
 }
 
+/// Listens for the `UncbMessage::ObjectRemoved` message and removes the corresponding player's bundle with the same `object_id` locally.
+fn remove_players(
+    mut c: Commands,
+    mut q: Query<(Entity, &Player)>,
+    mut er: EventReader<UncbEvent>,
+) {
+    for ev in er.read() {
+        match &ev.message {
+            UncbMessage::PlayerRemoved { data } => {
+                info!("Player removed: {}", data.object_id);
+                for (entity, player) in q.iter() {
+                    if player.data.object_id == data.object_id {
+                        c.entity(entity).remove::<PlayerBundle>();
+                    }
+                }
+            }
+
+            _ => {}
+        }
+    }
+}
+
+/// For every player within a query it checks if the player has an input manager, if it does
+/// then it knows we have the client, now we can update it's movement, otherwise, we know we
+/// have another player from the database, so instead it reads data from the database and updates those players.
 fn update_players(
     mut q: Query<
         (
@@ -47,8 +88,8 @@ fn update_players(
         if let Some(action_state) = action_state {
             // Handle input and update transform locally.
             let input_vector = vec2_nan_to_zero(get_input_vector(action_state).normalize());
-            transform.translation.x += input_vector.x;
-            transform.translation.y += input_vector.y;
+            transform.translation.x += input_vector.x * PLAYER_SPEED;
+            transform.translation.y += input_vector.y * PLAYER_SPEED;
             // Then sync to the database.
             update_player_pos(crate::StdbVector2 {
                 x: transform.translation.x,
@@ -66,18 +107,44 @@ fn update_players(
     }
 }
 
-/// Finds all currently spawned `Player`s and all `StdbPlayer`s within the database. \
-/// Spawns only the `StdbPlayer`s that do not have a spawned `Player` with a corresponding `Identity`. \
-/// Adds an `InputManagerBundle::<GameActions>` bundle to the *local* `Player` bundle.
-fn refresh_players(mut c: Commands, q: Query<&Player>) {
-    let mut spawnable_players: Vec<StdbPlayer> = Vec::new();
-    'stdb_loop: for stdb_player in StdbPlayer::iter() {
-        for player in q.iter() {
-            if player.data.client_id == stdb_player.client_id {
-                continue 'stdb_loop;
+/// Waits for the `UncbMessage::Connected` message in order to spawn all
+/// players that were in the database before connection.
+fn init_players(mut c: Commands, mut er: EventReader<UncbEvent>) {
+    for ev in er.read() {
+        match &ev.message {
+            UncbMessage::Connected { creds, address } => {
+                for stdb_player in StdbPlayer::iter() {
+                    // We cannot spawn the client on startup. We spawn them later with the input manager.
+                    if stdb_player.client_id == spacetimedb_sdk::identity::identity().unwrap() {
+                        continue;
+                    };
+
+                    c.spawn(PlayerBundle::new(Player {
+                        data: stdb_player.clone(),
+                    }));
+                }
             }
+            UncbMessage::Disconnected => {
+                break;
+            }
+            _ => {}
         }
-        spawnable_players.push(stdb_player);
+    }
+}
+
+/// Listens for the `UncbMessage::PlayerInserted` message and spawns all players recently inserted
+/// using a `PlayerBundle`. If the player received in the message has the same `client_id` as the
+/// current client, it adds an input manager onto the player, since it's the client.
+fn refresh_players(mut c: Commands, mut er: EventReader<UncbEvent>) {
+    let mut spawnable_players: Vec<StdbPlayer> = Vec::new();
+
+    for ev in er.read() {
+        match &ev.message {
+            UncbMessage::PlayerInserted { data, event } => {
+                spawnable_players.push(data.clone());
+            }
+            _ => {}
+        }
     }
 
     for spawn in spawnable_players {

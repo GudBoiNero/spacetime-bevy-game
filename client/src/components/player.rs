@@ -17,6 +17,8 @@ pub struct PlayerBundle {
     pub sprite_bundle: SpriteBundle,
 }
 
+pub const PLAYER_SPEED: f32 = 11.0;
+
 impl PlayerBundle {
     pub fn new(player: Player) -> Self {
         Self {

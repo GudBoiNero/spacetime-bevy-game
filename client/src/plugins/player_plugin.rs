@@ -85,6 +85,7 @@ fn init_players(mut c: Commands, mut er: EventReader<UncbEvent>) {
         match &ev.message {
             UncbMessage::Connected { creds, address } => {
                 for stdb_player in StdbPlayer::iter() {
+                    // We cannot spawn the client on startup. We spawn them later with the input manager.
                     if stdb_player.client_id == spacetimedb_sdk::identity::identity().unwrap() {
                         continue;
                     };

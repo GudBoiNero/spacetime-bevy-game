@@ -7,6 +7,7 @@ use bevy::{
     log::info,
 };
 use futures_channel::mpsc;
+use spacetimedb_sdk::{identity::Credentials, Address};
 
 use crate::{ReducerEvent, StdbObject, StdbPlayer};
 
@@ -16,6 +17,12 @@ use crate::{ReducerEvent, StdbObject, StdbPlayer};
 /// [System based on this](https://github.com/clockworklabs/SpacetimeDB/blob/master/crates/sdk/examples/cursive-chat/main.rs#L45)
 #[derive(Clone)]
 pub enum UncbMessage {
+    Connected {
+        creds: Credentials,
+        address: Address,
+    },
+    Disconnected,
+
     PlayerInserted {
         data: StdbPlayer,
         event: ReducerEvent,

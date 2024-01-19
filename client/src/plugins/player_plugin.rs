@@ -1,4 +1,7 @@
-use std::borrow::BorrowMut;
+use std::{
+    borrow::BorrowMut,
+    time::{Duration, SystemTime},
+};
 
 use bevy::{
     a11y::accesskit::Action,
@@ -12,6 +15,7 @@ use bevy::{
     },
     input::keyboard::KeyCode,
     log::info,
+    time::Time,
     transform::components::Transform,
 };
 use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, InputManagerBundle};
@@ -32,8 +36,8 @@ use crate::{
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (create_player))
-            .add_systems(Update, (refresh_players, update_players));
+        app.add_systems(Startup, (create_player,))
+            .add_systems(Update, (refresh_players, update_players, init_players));
     }
 }
 
@@ -71,10 +75,32 @@ fn update_players(
     }
 }
 
+fn init_players(mut c: Commands, mut er: EventReader<UncbEvent>) {
+    for ev in er.read() {
+        match &ev.message {
+            UncbMessage::Connected { creds, address } => {
+                for stdb_player in StdbPlayer::iter() {
+                    if stdb_player.client_id == spacetimedb_sdk::identity::identity().unwrap() {
+                        continue;
+                    };
+
+                    c.spawn(PlayerBundle::new(Player {
+                        data: stdb_player.clone(),
+                    }));
+                }
+            }
+            UncbMessage::Disconnected => {
+                break;
+            }
+            _ => {}
+        }
+    }
+}
+
 /// Finds all currently spawned `Player`s and all `StdbPlayer`s within the database. \
 /// Spawns only the `StdbPlayer`s that do not have a spawned `Player` with a corresponding `Identity`. \
 /// Adds an `InputManagerBundle::<GameActions>` bundle to the *local* `Player` bundle.
-fn refresh_players(mut c: Commands, q: Query<&Player>, mut er: EventReader<UncbEvent>) {
+fn refresh_players(mut c: Commands, mut er: EventReader<UncbEvent>) {
     let mut spawnable_players: Vec<StdbPlayer> = Vec::new();
 
     for ev in er.read() {

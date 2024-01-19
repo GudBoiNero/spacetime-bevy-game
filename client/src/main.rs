@@ -74,8 +74,8 @@ fn subscribe_to_tables() {
 
 //#region callbacks
 fn register_callbacks(uncb_send: UncbSend) {
-    once_on_connect(on_connected);
-    on_disconnect(on_disconnected);
+    once_on_connect(on_connected(uncb_send.clone()));
+    on_disconnect(on_disconnected(uncb_send.clone()));
 
     StdbObject::on_insert(on_object_inserted(uncb_send.clone()));
     StdbObject::on_update(on_object_updated(uncb_send.clone()));
@@ -90,15 +90,26 @@ fn register_callbacks(uncb_send: UncbSend) {
     StdbPlayer::on_delete(on_player_deleted(uncb_send.clone()));
 }
 
-fn on_connected(creds: &Credentials, _client_address: Address) {
-    if let Err(e) = save_credentials(CREDS_DIR, creds) {
-        eprintln!("Failed to save credentials: {:?}", e);
+fn on_connected(mut uncb_send: UncbSend) -> impl FnMut(&Credentials, Address) + Send + 'static {
+    move |creds, address| {
+        if let Err(e) = save_credentials(CREDS_DIR, creds) {
+            eprintln!("Failed to save credentials: {:?}", e);
+        }
+        uncb_send
+            .unbounded_send(UncbMessage::Connected {
+                creds: creds.clone(),
+                address,
+            })
+            .unwrap();
     }
 }
 
-fn on_disconnected() {
-    eprintln!("Disconnected!");
-    std::process::exit(0)
+fn on_disconnected(mut uncb_send: UncbSend) -> impl FnMut() + Send + 'static {
+    move || {
+        eprintln!("Disconnected!");
+        uncb_send.unbounded_send(UncbMessage::Disconnected).unwrap();
+        std::process::exit(0)
+    }
 }
 
 fn on_object_inserted(
@@ -107,7 +118,7 @@ fn on_object_inserted(
     move |object, event| {
         if let Some(event) = event {
             uncb_send
-                .start_send(UncbMessage::ObjectInserted {
+                .unbounded_send(UncbMessage::ObjectInserted {
                     data: object.clone(),
                     event: event.clone(),
                 })
@@ -122,7 +133,7 @@ fn on_object_updated(
     move |old, new, event| {
         if let Some(event) = event {
             uncb_send
-                .start_send(UncbMessage::ObjectUpdated {
+                .unbounded_send(UncbMessage::ObjectUpdated {
                     new: new.clone(),
                     old: old.clone(),
                     event: event.clone(),
@@ -138,7 +149,7 @@ fn on_object_deleted(
     move |object, event| {
         if let Some(event) = event {
             uncb_send
-                .start_send(UncbMessage::ObjectRemoved {
+                .unbounded_send(UncbMessage::ObjectRemoved {
                     data: object.clone(),
                     event: event.clone(),
                 })
@@ -188,7 +199,7 @@ fn on_player_inserted(
     move |player, event| {
         if let Some(event) = event {
             uncb_send
-                .start_send(UncbMessage::PlayerInserted {
+                .unbounded_send(UncbMessage::PlayerInserted {
                     data: player.clone(),
                     event: event.clone(),
                 })
@@ -203,7 +214,7 @@ fn on_player_updated(
     move |old, new, event| {
         if let Some(event) = event {
             uncb_send
-                .start_send(UncbMessage::PlayerUpdated {
+                .unbounded_send(UncbMessage::PlayerUpdated {
                     old: old.clone(),
                     new: new.clone(),
                     event: event.clone(),
@@ -219,7 +230,7 @@ fn on_player_deleted(
     move |player, event| {
         if let Some(event) = event {
             uncb_send
-                .start_send(UncbMessage::PlayerRemoved {
+                .unbounded_send(UncbMessage::PlayerRemoved {
                     data: player.clone(),
                     event: event.clone(),
                 })

@@ -26,7 +26,7 @@ use util::actions::GameActions;
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
 const CREDS_DIR: &str = ".spacetime-bevy-game";
-const DEBUG_MODE: bool = false;
+const DEBUG_MODE: bool = true;
 
 fn main() {
     let (uncb_send, uncb_recv) = mpsc::unbounded();

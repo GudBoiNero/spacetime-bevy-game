@@ -70,6 +70,12 @@ pub struct UncbEvent {
     pub message: UncbMessage,
 }
 
+/// Any system that requires an `EventReader` of type `UncbEvent` will not function on the `Startup` schedule.
+/// \
+/// This is because of how `process_messages` is called, it should always be called in the `main` function
+/// on the `Update` schedule.
+/// Since `Startup` is scheduled to run before and `Update` events, the events will never
+/// be present if read with an `EventReader` on `Startup`.
 pub fn process_messages(mut res: ResMut<UncbReceiver>, mut c: Commands) {
     loop {
         let message = res.recv.try_next();

@@ -41,6 +41,9 @@ impl Plugin for PlayerPlugin {
     }
 }
 
+/// For every player within a query it checks if the player has an input manager, if it does
+/// then it knows we have the client, now we can update it's movement, otherwise, we know we
+/// have another player from the database, so instead it reads data from the database and updates those players.
 fn update_players(
     mut q: Query<
         (
@@ -75,6 +78,8 @@ fn update_players(
     }
 }
 
+/// Waits for the `UncbMessage::Connected` message in order to spawn all
+/// players that were in the database before connection.
 fn init_players(mut c: Commands, mut er: EventReader<UncbEvent>) {
     for ev in er.read() {
         match &ev.message {
@@ -97,9 +102,9 @@ fn init_players(mut c: Commands, mut er: EventReader<UncbEvent>) {
     }
 }
 
-/// Finds all currently spawned `Player`s and all `StdbPlayer`s within the database. \
-/// Spawns only the `StdbPlayer`s that do not have a spawned `Player` with a corresponding `Identity`. \
-/// Adds an `InputManagerBundle::<GameActions>` bundle to the *local* `Player` bundle.
+/// Listens for the `UncbMessage::PlayerInserted` message and spawns all players recently inserted
+/// using a `PlayerBundle`. If the player received in the message has the same `client_id` as the
+/// current client, it adds an input manager onto the player, since it's the client.
 fn refresh_players(mut c: Commands, mut er: EventReader<UncbEvent>) {
     let mut spawnable_players: Vec<StdbPlayer> = Vec::new();
 

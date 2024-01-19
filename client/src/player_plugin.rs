@@ -14,15 +14,11 @@ use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, Inp
 use spacetimedb_sdk::table::TableType;
 
 use crate::{
-    components::player::{Player, PlayerBundle, PLAYER_SPEED},
+    actions::{get_input_vector, GameActions},
     create_player, identity_leading_hex,
-    resources::uncb_receiver::{UncbEvent, UncbMessage},
-    update_player_pos,
-    util::{
-        actions::{get_input_vector, GameActions},
-        vec2_nan_to_zero,
-    },
-    StdbObject, StdbPlayer,
+    player::{Player, PlayerBundle, PLAYER_SPEED},
+    uncb_receiver::{UncbEvent, UncbMessage},
+    update_player_pos, vec2_nan_to_zero, StdbObject, StdbPlayer,
 };
 
 pub struct PlayerPlugin;

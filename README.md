@@ -2,10 +2,11 @@ This repository is entirely experimental. I have no plans for it besides learnin
 
 # Setup
 
--   Install [SpacetimeDB CLI](), [wasm-opt](https://github.com/WebAssembly/binaryen/releases), [Rust](), and [CMake]().
+-   Install [SpacetimeDB CLI](https://spacetimedb.com/install), [wasm-opt](https://github.com/WebAssembly/binaryen/releases), [Rust](https://www.rust-lang.org/tools/install), and [CMake](https://cmake.org/download).
 -   Clone this repository and open it within VSCode.
 -   Run the VSCode task `Generate Server Bindings`.
--   Next open a new terminal and run `spacetime run`
+-   Next open a new terminal and run `spacetime run`.
+-   Next run the VSCode task `Build`.
 
 ### Operating System
 

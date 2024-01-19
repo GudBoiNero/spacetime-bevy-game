@@ -1,6 +1,8 @@
+use actions::GameActions;
+use bevy::math::Vec2;
 use bevy::prelude::*;
 use leafwing_input_manager::plugin::InputManagerPlugin;
-use resources::uncb_receiver::{process_messages, UncbEvent, UncbMessage, UncbReceiver, UncbSend};
+use player_plugin::PlayerPlugin;
 use spacetimedb_sdk::{
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
     on_disconnect, subscribe,
@@ -8,16 +10,15 @@ use spacetimedb_sdk::{
     Address,
 };
 
-mod components;
+mod actions;
 mod module_bindings;
-mod plugins;
-mod resources;
-mod util;
+mod player;
+mod player_plugin;
+mod uncb_receiver;
 
 use futures_channel::mpsc;
 use module_bindings::*;
-use plugins::player_plugin::PlayerPlugin;
-use util::actions::GameActions;
+use uncb_receiver::{process_messages, UncbEvent, UncbMessage, UncbReceiver, UncbSend};
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
@@ -232,3 +233,28 @@ fn identity_leading_hex(id: &Identity) -> String {
     hex::encode(&id.bytes()[0..8])
 }
 //#endregion callbacks
+
+//#region helpers
+pub fn bool_to_f32(v: bool) -> f32 {
+    if v {
+        1.0
+    } else {
+        0.0
+    }
+}
+
+pub fn nan_to_zero(v: f32) -> f32 {
+    if v.is_nan() {
+        0.0
+    } else {
+        v
+    }
+}
+
+pub fn vec2_nan_to_zero(v: Vec2) -> Vec2 {
+    Vec2 {
+        x: nan_to_zero(v.x),
+        y: nan_to_zero(v.y),
+    }
+}
+//#endregion helpers

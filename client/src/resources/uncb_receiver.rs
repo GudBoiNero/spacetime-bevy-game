@@ -1,10 +1,7 @@
-use bevy::{
-    ecs::{
-        event::Event,
-        system::{Commands, ResMut, Resource},
-        world::World,
-    },
-    log::info,
+use bevy::ecs::{
+    event::Event,
+    system::{Commands, ResMut, Resource},
+    world::World,
 };
 use futures_channel::mpsc;
 use spacetimedb_sdk::{identity::Credentials, Address};

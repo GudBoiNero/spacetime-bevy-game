@@ -1,14 +1,12 @@
-use std::ptr::{null, null_mut};
-
 use log::info;
-use spacetimedb::{spacetimedb, Identity, SpacetimeType, ReducerContext, Result, sats::db::error, TableType};
+use spacetimedb::{spacetimedb, Identity, ReducerContext, Result, SpacetimeType};
 
 #[spacetimedb(table)]
 #[derive(Clone)]
 pub struct StdbClient {
     #[primarykey]
     pub client_id: Identity,
-    pub connected: bool
+    pub connected: bool,
 }
 
 #[derive(SpacetimeType, Clone, Default)]
@@ -71,9 +69,11 @@ pub fn update_client_login_state(ctx: ReducerContext, connected: bool) {
         }
         info!("Updated Client Login State");
     } else {
-        StdbClient::insert(
-            StdbClient {client_id: ctx.sender, connected}
-        ).expect("Failed to create a unique Client");
+        StdbClient::insert(StdbClient {
+            client_id: ctx.sender,
+            connected,
+        })
+        .expect("Failed to create a unique Client");
         info!("Created Client");
     }
 }
@@ -92,14 +92,17 @@ pub fn create_player(ctx: ReducerContext) -> Result<(), String> {
     }
 
     // Create a new entity for this player and get a unique `entity_id`.
-    let object_id = StdbObject::insert(StdbObject::default()).expect("Failed to create a unique Player.").object_id;
+    let object_id = StdbObject::insert(StdbObject::default())
+        .expect("Failed to create a unique Player.")
+        .object_id;
 
     // The PlayerComponent uses the same entity_id and stores the identity of
     // the owner, username, and whether or not they are logged in.
     StdbPlayer::insert(StdbPlayer {
         object_id,
-        client_id
-    }).expect("Failed to insert Player.");
+        client_id,
+    })
+    .expect("Failed to insert Player.");
 
     log::info!("Player created: {}", object_id);
 

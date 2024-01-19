@@ -1,10 +1,6 @@
-use std::borrow::Borrow;
-
-use bevy::{prelude::*, utils::futures};
+use bevy::prelude::*;
 use leafwing_input_manager::plugin::InputManagerPlugin;
-use resources::uncb_receiver::{
-    process_messages, UncbEvent, UncbMessage, UncbReceiver, UncbRecv, UncbSend,
-};
+use resources::uncb_receiver::{process_messages, UncbEvent, UncbMessage, UncbReceiver, UncbSend};
 use spacetimedb_sdk::{
     identity::{load_credentials, once_on_connect, save_credentials, Credentials, Identity},
     on_disconnect, subscribe,
@@ -20,7 +16,7 @@ mod util;
 
 use futures_channel::mpsc;
 use module_bindings::*;
-use plugins::{player_plugin::PlayerPlugin, *};
+use plugins::player_plugin::PlayerPlugin;
 use util::actions::GameActions;
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
@@ -83,14 +79,13 @@ fn register_callbacks(uncb_send: UncbSend) {
 
     StdbClient::on_insert(on_client_inserted(uncb_send.clone()));
     StdbClient::on_update(on_client_updated(uncb_send.clone()));
-    StdbClient::on_delete(on_client_deleted(uncb_send.clone()));
 
     StdbPlayer::on_insert(on_player_inserted(uncb_send.clone()));
     StdbPlayer::on_update(on_player_updated(uncb_send.clone()));
     StdbPlayer::on_delete(on_player_deleted(uncb_send.clone()));
 }
 
-fn on_connected(mut uncb_send: UncbSend) -> impl FnMut(&Credentials, Address) + Send + 'static {
+fn on_connected(uncb_send: UncbSend) -> impl FnMut(&Credentials, Address) + Send + 'static {
     move |creds, address| {
         if let Err(e) = save_credentials(CREDS_DIR, creds) {
             eprintln!("Failed to save credentials: {:?}", e);
@@ -104,7 +99,7 @@ fn on_connected(mut uncb_send: UncbSend) -> impl FnMut(&Credentials, Address) + 
     }
 }
 
-fn on_disconnected(mut uncb_send: UncbSend) -> impl FnMut() + Send + 'static {
+fn on_disconnected(uncb_send: UncbSend) -> impl FnMut() + Send + 'static {
     move || {
         eprintln!("Disconnected!");
         uncb_send.unbounded_send(UncbMessage::Disconnected).unwrap();
@@ -113,7 +108,7 @@ fn on_disconnected(mut uncb_send: UncbSend) -> impl FnMut() + Send + 'static {
 }
 
 fn on_object_inserted(
-    mut uncb_send: UncbSend,
+    uncb_send: UncbSend,
 ) -> impl FnMut(&StdbObject, Option<&ReducerEvent>) + Send + 'static {
     move |object, event| {
         if let Some(event) = event {
@@ -128,7 +123,7 @@ fn on_object_inserted(
 }
 
 fn on_object_updated(
-    mut uncb_send: UncbSend,
+    uncb_send: UncbSend,
 ) -> impl FnMut(&StdbObject, &StdbObject, Option<&ReducerEvent>) + Send + 'static {
     move |old, new, event| {
         if let Some(event) = event {
@@ -144,7 +139,7 @@ fn on_object_updated(
 }
 
 fn on_object_deleted(
-    mut uncb_send: UncbSend,
+    uncb_send: UncbSend,
 ) -> impl FnMut(&StdbObject, Option<&ReducerEvent>) + Send + 'static {
     move |object, event| {
         if let Some(event) = event {
@@ -159,9 +154,9 @@ fn on_object_deleted(
 }
 
 fn on_client_inserted(
-    mut uncb_send: UncbSend,
+    _uncb_send: UncbSend,
 ) -> impl FnMut(&StdbClient, Option<&ReducerEvent>) + Send + 'static {
-    move |client, event| {
+    move |client, _event| {
         if client.connected {
             println!(
                 "Client {} connected.",
@@ -172,9 +167,9 @@ fn on_client_inserted(
 }
 
 fn on_client_updated(
-    mut uncb_send: UncbSend,
+    mut _uncb_send: UncbSend,
 ) -> impl FnMut(&StdbClient, &StdbClient, Option<&ReducerEvent>) + Send + 'static {
-    move |old, new, event| {
+    move |old, new, _event| {
         if old.connected && !new.connected {
             println!(
                 "Client {} disconnected.",
@@ -187,14 +182,8 @@ fn on_client_updated(
     }
 }
 
-fn on_client_deleted(
-    mut uncb_send: UncbSend,
-) -> impl FnMut(&StdbClient, Option<&ReducerEvent>) + Send + 'static {
-    move |client, event| {}
-}
-
 fn on_player_inserted(
-    mut uncb_send: UncbSend,
+    uncb_send: UncbSend,
 ) -> impl FnMut(&StdbPlayer, Option<&ReducerEvent>) + Send + 'static {
     move |player, event| {
         if let Some(event) = event {
@@ -210,7 +199,7 @@ fn on_player_inserted(
 }
 
 fn on_player_updated(
-    mut uncb_send: UncbSend,
+    uncb_send: UncbSend,
 ) -> impl FnMut(&StdbPlayer, &StdbPlayer, Option<&ReducerEvent>) + Send + 'static {
     move |old, new, event| {
         if let Some(event) = event {
@@ -227,9 +216,9 @@ fn on_player_updated(
 }
 
 fn on_player_deleted(
-    mut uncb_send: UncbSend,
+    uncb_send: UncbSend,
 ) -> impl FnMut(&StdbPlayer, Option<&ReducerEvent>) + Send + 'static {
-    move |player, event| {
+    move |player, _event| {
         info!("UncbMessage::PlayerRemoved called");
         uncb_send
             .unbounded_send(UncbMessage::PlayerRemoved {

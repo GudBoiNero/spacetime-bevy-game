@@ -1,21 +1,13 @@
-use std::{
-    borrow::BorrowMut,
-    time::{Duration, SystemTime},
-};
-
 use bevy::{
-    a11y::accesskit::Action,
     app::{App, Plugin, Startup, Update},
     ecs::{
         entity::Entity,
-        event::{EventReader, EventWriter},
+        event::EventReader,
         query::With,
-        system::{Commands, Query, Res, ResMut},
-        world::World,
+        system::{Commands, Query},
     },
     input::keyboard::KeyCode,
     log::info,
-    time::Time,
     transform::components::Transform,
 };
 use leafwing_input_manager::{action_state::ActionState, input_map::InputMap, InputManagerBundle};
@@ -24,8 +16,8 @@ use spacetimedb_sdk::table::TableType;
 use crate::{
     components::player::{Player, PlayerBundle, PLAYER_SPEED},
     create_player, identity_leading_hex,
-    resources::uncb_receiver::{UncbEvent, UncbMessage, UncbReceiver},
-    stdb_player, update_player_pos,
+    resources::uncb_receiver::{UncbEvent, UncbMessage},
+    update_player_pos,
     util::{
         actions::{get_input_vector, GameActions},
         vec2_nan_to_zero,
@@ -49,11 +41,7 @@ impl Plugin for PlayerPlugin {
 }
 
 /// Listens for the `UncbMessage::ObjectRemoved` message and removes the corresponding player's bundle with the same `object_id` locally.
-fn remove_players(
-    mut c: Commands,
-    mut q: Query<(Entity, &Player)>,
-    mut er: EventReader<UncbEvent>,
-) {
+fn remove_players(mut c: Commands, q: Query<(Entity, &Player)>, mut er: EventReader<UncbEvent>) {
     for ev in er.read() {
         match &ev.message {
             UncbMessage::PlayerRemoved { data } => {
@@ -112,7 +100,10 @@ fn update_players(
 fn init_players(mut c: Commands, mut er: EventReader<UncbEvent>) {
     for ev in er.read() {
         match &ev.message {
-            UncbMessage::Connected { creds, address } => {
+            UncbMessage::Connected {
+                creds: _,
+                address: _,
+            } => {
                 for stdb_player in StdbPlayer::iter() {
                     // We cannot spawn the client on startup. We spawn them later with the input manager.
                     if stdb_player.client_id == spacetimedb_sdk::identity::identity().unwrap() {
@@ -140,7 +131,7 @@ fn refresh_players(mut c: Commands, mut er: EventReader<UncbEvent>) {
 
     for ev in er.read() {
         match &ev.message {
-            UncbMessage::PlayerInserted { data, event } => {
+            UncbMessage::PlayerInserted { data, event: _ } => {
                 spawnable_players.push(data.clone());
             }
             _ => {}

@@ -1,4 +1,4 @@
-use bevy::{log::info, math::Vec2, reflect::Reflect};
+use bevy::{math::Vec2, reflect::Reflect};
 use leafwing_input_manager::{action_state::ActionState, Actionlike};
 
 use super::bool_to_f32;

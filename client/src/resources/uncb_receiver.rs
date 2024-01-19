@@ -1,7 +1,10 @@
-use bevy::ecs::{
-    event::Event,
-    system::{Commands, ResMut, Resource},
-    world::World,
+use bevy::{
+    ecs::{
+        event::Event,
+        system::{Commands, ResMut, Resource},
+        world::World,
+    },
+    log::info,
 };
 use futures_channel::mpsc;
 
@@ -14,7 +17,7 @@ use crate::{ReducerEvent, StdbObject, StdbPlayer};
 #[derive(Clone)]
 pub enum UncbMessage {
     PlayerInserted {
-        player: StdbPlayer,
+        data: StdbPlayer,
         event: ReducerEvent,
     },
     PlayerUpdated {
@@ -22,12 +25,21 @@ pub enum UncbMessage {
         new: StdbPlayer,
         event: ReducerEvent,
     },
-    PlayerDeleted {
-        player: StdbPlayer,
+    PlayerRemoved {
+        data: StdbPlayer,
         event: ReducerEvent,
     },
     ObjectInserted {
-        object: StdbObject,
+        data: StdbObject,
+        event: ReducerEvent,
+    },
+    ObjectUpdated {
+        old: StdbObject,
+        new: StdbObject,
+        event: ReducerEvent,
+    },
+    ObjectRemoved {
+        data: StdbObject,
         event: ReducerEvent,
     },
 }
@@ -48,7 +60,7 @@ impl UncbReceiver {
 
 #[derive(Event)]
 pub struct UncbEvent {
-    message: UncbMessage,
+    pub message: UncbMessage,
 }
 
 pub fn process_messages(mut res: ResMut<UncbReceiver>, mut c: Commands) {
@@ -56,6 +68,8 @@ pub fn process_messages(mut res: ResMut<UncbReceiver>, mut c: Commands) {
         let message = res.recv.try_next();
         if let Ok(message) = message {
             if let Some(message) = message {
+                info!("Processing message.");
+
                 c.add(|w: &mut World| w.send_event(UncbEvent { message }));
             }
         } else {

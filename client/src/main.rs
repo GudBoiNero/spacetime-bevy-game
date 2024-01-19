@@ -1,6 +1,7 @@
 use std::borrow::Borrow;
 
 use bevy::{prelude::*, utils::futures};
+use leafwing_input_manager::plugin::InputManagerPlugin;
 use resources::uncb_receiver::{
     process_messages, UncbEvent, UncbMessage, UncbReceiver, UncbRecv, UncbSend,
 };
@@ -20,10 +21,12 @@ mod util;
 use futures_channel::mpsc;
 use module_bindings::*;
 use plugins::{player_plugin::PlayerPlugin, *};
+use util::actions::GameActions;
 
 const SPACETIMEDB_URI: &str = "http://localhost:3000";
 const DB_NAME: &str = "spacetime-bevy-game";
 const CREDS_DIR: &str = ".spacetime-bevy-game";
+const DEBUG_MODE: bool = false;
 
 fn main() {
     let (uncb_send, uncb_recv) = mpsc::unbounded();
@@ -35,7 +38,11 @@ fn main() {
     let mut app = App::new();
     app.insert_resource(UncbReceiver::new(uncb_recv))
         .add_event::<UncbEvent>()
-        .add_plugins((DefaultPlugins, PlayerPlugin))
+        .add_plugins((
+            DefaultPlugins,
+            PlayerPlugin,
+            InputManagerPlugin::<GameActions>::default(),
+        ))
         .add_systems(Startup, init_camera)
         .add_systems(Update, process_messages)
         .run();
@@ -51,7 +58,11 @@ fn connect_to_db() {
     connect(
         SPACETIMEDB_URI,
         DB_NAME,
-        load_credentials(CREDS_DIR).expect("Error reading stored credentials"),
+        if DEBUG_MODE {
+            None
+        } else {
+            load_credentials(CREDS_DIR).expect("Error reading stored credentials")
+        },
     )
     .expect("Failed to connect");
 }
@@ -93,19 +104,47 @@ fn on_disconnected() {
 fn on_object_inserted(
     mut uncb_send: UncbSend,
 ) -> impl FnMut(&StdbObject, Option<&ReducerEvent>) + Send + 'static {
-    move |object, event| {}
+    move |object, event| {
+        if let Some(event) = event {
+            uncb_send
+                .start_send(UncbMessage::ObjectInserted {
+                    data: object.clone(),
+                    event: event.clone(),
+                })
+                .unwrap();
+        }
+    }
 }
 
 fn on_object_updated(
     mut uncb_send: UncbSend,
 ) -> impl FnMut(&StdbObject, &StdbObject, Option<&ReducerEvent>) + Send + 'static {
-    move |old, new, event| {}
+    move |old, new, event| {
+        if let Some(event) = event {
+            uncb_send
+                .start_send(UncbMessage::ObjectUpdated {
+                    new: new.clone(),
+                    old: old.clone(),
+                    event: event.clone(),
+                })
+                .unwrap();
+        }
+    }
 }
 
 fn on_object_deleted(
     mut uncb_send: UncbSend,
 ) -> impl FnMut(&StdbObject, Option<&ReducerEvent>) + Send + 'static {
-    move |object, event| {}
+    move |object, event| {
+        if let Some(event) = event {
+            uncb_send
+                .start_send(UncbMessage::ObjectRemoved {
+                    data: object.clone(),
+                    event: event.clone(),
+                })
+                .unwrap();
+        }
+    }
 }
 
 fn on_client_inserted(
@@ -150,7 +189,7 @@ fn on_player_inserted(
         if let Some(event) = event {
             uncb_send
                 .start_send(UncbMessage::PlayerInserted {
-                    player: player.clone(),
+                    data: player.clone(),
                     event: event.clone(),
                 })
                 .unwrap();
@@ -180,8 +219,8 @@ fn on_player_deleted(
     move |player, event| {
         if let Some(event) = event {
             uncb_send
-                .start_send(UncbMessage::PlayerDeleted {
-                    player: player.clone(),
+                .start_send(UncbMessage::PlayerRemoved {
+                    data: player.clone(),
                     event: event.clone(),
                 })
                 .unwrap();

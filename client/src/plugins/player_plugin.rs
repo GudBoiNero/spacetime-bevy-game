@@ -56,7 +56,7 @@ fn remove_players(
 ) {
     for ev in er.read() {
         match &ev.message {
-            UncbMessage::PlayerRemoved { data, event } => {
+            UncbMessage::PlayerRemoved { data } => {
                 info!("Player removed: {}", data.object_id);
                 for (entity, player) in q.iter() {
                     if player.data.object_id == data.object_id {
@@ -88,8 +88,8 @@ fn update_players(
         if let Some(action_state) = action_state {
             // Handle input and update transform locally.
             let input_vector = vec2_nan_to_zero(get_input_vector(action_state).normalize());
-            transform.translation.x += input_vector.x;
-            transform.translation.y += input_vector.y;
+            transform.translation.x += input_vector.x * PLAYER_SPEED;
+            transform.translation.y += input_vector.y * PLAYER_SPEED;
             // Then sync to the database.
             update_player_pos(crate::StdbVector2 {
                 x: transform.translation.x,
@@ -101,8 +101,8 @@ fn update_players(
             // Read from database and update transform.
             let stdb_object = StdbObject::filter_by_object_id(player.data.object_id);
             let position = stdb_object.unwrap().position;
-            transform.translation.x = position.x * PLAYER_SPEED;
-            transform.translation.y = position.y * PLAYER_SPEED;
+            transform.translation.x = position.x;
+            transform.translation.y = position.y;
         }
     }
 }

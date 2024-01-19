@@ -230,15 +230,12 @@ fn on_player_deleted(
     mut uncb_send: UncbSend,
 ) -> impl FnMut(&StdbPlayer, Option<&ReducerEvent>) + Send + 'static {
     move |player, event| {
-        if let Some(event) = event {
-            info!("UncbMessage::PlayerRemoved called");
-            uncb_send
-                .unbounded_send(UncbMessage::PlayerRemoved {
-                    data: player.clone(),
-                    event: event.clone(),
-                })
-                .unwrap();
-        }
+        info!("UncbMessage::PlayerRemoved called");
+        uncb_send
+            .unbounded_send(UncbMessage::PlayerRemoved {
+                data: player.clone(),
+            })
+            .unwrap();
     }
 }
 

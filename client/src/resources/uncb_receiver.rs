@@ -34,7 +34,6 @@ pub enum UncbMessage {
     },
     PlayerRemoved {
         data: StdbPlayer,
-        event: ReducerEvent,
     },
     ObjectInserted {
         data: StdbObject,

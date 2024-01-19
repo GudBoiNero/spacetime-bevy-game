@@ -1330,7 +1330,7 @@ name = "client"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy_tasks",
+ "futures-channel",
  "hex",
  "leafwing-input-manager",
  "spacetimedb-sdk",
